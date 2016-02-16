@@ -35,5 +35,7 @@ ChangeLog:
 DISTCHECK_CONFIGURE_FLAGS = \
   --disable-maintainer-mode
 
-GITIGNOREFILES =
+GITIGNOREFILES = \
+  $(DIST_ARCHIVES)
+
 -include $(top_srcdir)/git.mk
