@@ -13,6 +13,22 @@ MAINTAINERCLEANFILES = \
   $(srcdir)/INSTALL \
   $(srcdir)/README
 
+AM_CPPFLAGS = \
+  -DG_LOG_DOMAIN=\"usbemu\" \
+  -DUSBEMU_VERSION=\"$(USBEMU_VERSION)\" \
+  -I$(top_builddir) \
+  -I$(top_srcdir)
+
+bin_PROGRAMS = \
+  src/usbemud
+
+src_usbemud_SOURCES = \
+  src/usbemud.c
+src_usbemud_CFLAGS = \
+  $(BASE_DEPS_CFLAGS)
+src_usbemud_LDADD = \
+  $(BASE_DEPS_LIBS)
+
 distclean-local:
 	if test "$(srcdir)" = "."; then :; else \
 	  rm -f ChangeLog; \
