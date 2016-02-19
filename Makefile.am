@@ -1,5 +1,10 @@
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
+bin_PROGRAMS =
+noinst_LTLIBRARIES =
+
+CLEANFILES =
+
 EXTRA_DIST = \
   autogen.sh \
   INSTALL \
@@ -19,7 +24,38 @@ AM_CPPFLAGS = \
   -I$(top_builddir) \
   -I$(top_srcdir)
 
-bin_PROGRAMS = \
+noinst_LTLIBRARIES += \
+  usbemu/libusbemu-dbus.la
+
+usbemu_libusbemu_dbus_la_SOURCES = \
+  usbemu/usbemu-dbus-manager.c \
+  usbemu/usbemu-dbus-manager.h
+usbemu_libusbemu_dbus_la_CFLAGS = \
+  $(BASE_DEPS_CFLAGS)
+usbemu_libusbemu_dbus_la_LIBADD = \
+  $(BASE_DEPS_LIBS)
+
+define _make_usbemu_dbus_rule
+$(1): $(1:.c=.xml)
+	$$(AM_V_GEN) gdbus-codegen \
+	  --generate-c-code $$(basename $$@) \
+	  --c-namespace UsbemuDBus \
+	  --interface-prefix org.usbemu.UsbemuManager \
+	  $$<
+
+$(basename $(1)).h: $(1)
+	@true
+endef
+
+$(foreach f,$(filter %.c,$(usbemu_libusbemu_dbus_la_SOURCES)),$(eval $(call _make_usbemu_dbus_rule,$(f))))
+
+CLEANFILES += \
+  $(usbemu_libusbemu_dbus_la_SOURCES)
+
+EXTRA_DIST += \
+  usbemu/usbemu-dbus-manager.xml
+
+bin_PROGRAMS += \
   src/usbemud
 
 src_usbemud_SOURCES = \
@@ -52,6 +88,7 @@ DISTCHECK_CONFIGURE_FLAGS = \
   --disable-maintainer-mode
 
 GITIGNOREFILES = \
-  $(DIST_ARCHIVES)
+  $(DIST_ARCHIVES) \
+  $(usbemu_libusbemu_dbus_la_SOURCES)
 
 -include $(top_srcdir)/git.mk

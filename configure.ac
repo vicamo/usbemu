@@ -19,7 +19,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_AUX_DIR([build-aux])
 
 # Depends on automake 1.14 or newer so that we don't need AM_PROG_CC_C_O
-AM_INIT_AUTOMAKE([1.14 dist-xz foreign subdir-objects no-define -Wall -Werror])
+AM_INIT_AUTOMAKE([1.14 dist-xz foreign subdir-objects no-define -Wall])
 AM_MAINTAINER_MODE([enable])
 AM_SILENT_RULES([yes])
 
@@ -38,6 +38,14 @@ AC_SUBST(USBEMU_BINARY_AGE)
 AC_SUBST(USBEMU_VERSION)
 AC_SUBST(USBEMU_API_VERSION)
 
+m4_define([lt_current], [m4_eval(100 * usbemu_minor_version + usbemu_micro_version - usbemu_interface_age)])
+m4_define([lt_revision], [usbemu_interface_age])
+m4_define([lt_age], [m4_eval(usbemu_binary_age - usbemu_interface_age)])
+LT_VERSION_INFO="lt_current:lt_revision:lt_age"
+LT_CURRENT_MINUS_AGE=m4_eval(lt_current - lt_age)
+AC_SUBST(LT_VERSION_INFO)
+AC_SUBST(LT_CURRENT_MINUS_AGE)
+
 AC_PROG_CC
 
 # Define _GNU_SOURCE etc. where appropriate, e.g. for strptime() on glibc
@@ -45,7 +53,17 @@ AC_USE_SYSTEM_EXTENSIONS
 # Make sure we use 64-bit versions of various file stuff.
 AC_SYS_LARGEFILE
 
-PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.6])
+AM_PROG_AR
+
+dnl Initialize libtool
+LT_PREREQ([2.2.6])
+LT_INIT([disable-static])
+# Create libtool early, because it's used in configure
+LT_OUTPUT
+
+PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.6 dnl
+                              gio-2.0 >= 2.26 dnl
+                              gio-unix-2.0 >= 2.24])
 
 AC_OUTPUT([
   Makefile

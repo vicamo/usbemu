@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<node name="/org/usbemu/UsbemuManager">
+  <!--
+    org.usbemu.UsbemuManager:
+    @short_description: Main DBus interface for usbemu service
+  -->
+  <interface name="org.usbemu.UsbemuManager">
+    <annotation name="org.gtk.GDBus.C.Name" value="Manager"/>
+
+    <property name="Devices" type="ao" access="read"/>
+
+    <!-- Version: UsbemuManager version -->
+    <property name="Version" type="s" access="read"/>
+  </interface>
+</node>
