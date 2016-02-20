@@ -17,17 +17,35 @@
 
 #include "config.h"
 
-#include <glib.h>
+#include <errno.h>
+#include <stdlib.h>
 
+#include <glib.h>
+#include <gio/gio.h>
+
+static gboolean opt_daemon = FALSE;
 static gboolean opt_debug = FALSE;
+static gchar * opt_name = "org.usbemu.UsbemuManager";
+static gboolean opt_session = FALSE;
 static gboolean opt_version = FALSE;
 
 static GOptionEntry entries[] =
 {
+  { "daemon", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_debug, "Run as daemon", NULL },
   { "debug", 'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_debug, "Print debugging information", NULL },
+  { "name", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &opt_name, "DBus name NAME to acquire. Default: \"org.usbemu.UsbemuManager\"", "NAME" },
+  { "session", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_session, "Bind to DBus session bus", NULL },
   { "version", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_version, "Show version", NULL },
   { NULL }
 };
+
+static void
+on_name_acquired (GDBusConnection *connection,
+                  const gchar     *name,
+                  gpointer         user_data)
+{
+  g_info ("message bus name acquired");
+}
 
 int
 main (int argc, char** argv)
@@ -55,6 +73,32 @@ main (int argc, char** argv)
     g_log_set_handler (G_LOG_DOMAIN, G_LOG_LEVEL_INFO,  g_log_default_handler, NULL);
     g_log_set_handler (G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG,  g_log_default_handler, NULL);
   }
+
+  if (opt_daemon) {
+    if (daemon (0, 0) < 0) {
+      int saved_errno;
+
+      saved_errno = errno;
+      g_printerr ("Could not daemonize: %s [error %u]\n",
+                  g_strerror (saved_errno), saved_errno);
+      exit (1);
+    }
+  }
+
+  GBusType bus_type;
+  guint owner_id;
+
+  bus_type = (opt_session ? G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM);
+  owner_id = g_bus_own_name (bus_type, opt_name,
+                             G_BUS_NAME_OWNER_FLAGS_NONE,
+                             NULL, on_name_acquired, NULL,
+                             NULL, NULL);
+
+  GMainLoop *loop = g_main_loop_new (NULL, FALSE);
+  g_main_loop_run (loop);
+
+  g_bus_unown_name (owner_id);
+  g_main_loop_unref (loop);
 
   return 0;
 }
