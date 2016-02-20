@@ -61,6 +61,8 @@ usbemu_libusbemu_la_LDFLAGS = \
 ## libusbemu - dbus
 
 libusbemu_dbus_csources = \
+  usbemu/dbus/usbemu-dbus-device.c \
+  usbemu/dbus/usbemu-dbus-device.h \
   usbemu/dbus/usbemu-dbus-manager.c \
   usbemu/dbus/usbemu-dbus-manager.h
 
@@ -87,6 +89,7 @@ GITIGNOREFILES += \
   $(libusbemu_dbus_csources)
 
 EXTRA_DIST += \
+  usbemu/dbus/usbemu-dbus-device.xml \
   usbemu/dbus/usbemu-dbus-manager.xml
 
 ###############################
