@@ -3,12 +3,15 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 bin_PROGRAMS =
 noinst_LTLIBRARIES =
 
-CLEANFILES =
-
 EXTRA_DIST = \
   autogen.sh \
   INSTALL \
   README
+
+CLEANFILES =
+
+GITIGNOREFILES = \
+  $(DIST_ARCHIVES)
 
 MAINTAINERCLEANFILES = \
   $(GITIGNORE_MAINTAINERCLEANFILES_TOPLEVEL) \
@@ -17,6 +20,9 @@ MAINTAINERCLEANFILES = \
   $(srcdir)/ChangeLog \
   $(srcdir)/INSTALL \
   $(srcdir)/README
+
+DISTCHECK_CONFIGURE_FLAGS = \
+  --disable-maintainer-mode
 
 AM_CPPFLAGS = \
   -DG_LOG_DOMAIN=\"usbemu\" \
@@ -52,6 +58,9 @@ $(foreach f,$(filter %.c,$(usbemu_libusbemu_dbus_la_SOURCES)),$(eval $(call _mak
 CLEANFILES += \
   $(usbemu_libusbemu_dbus_la_SOURCES)
 
+GITIGNOREFILES += \
+  $(usbemu_libusbemu_dbus_la_SOURCES)
+
 EXTRA_DIST += \
   usbemu/usbemu-dbus-manager.xml
 
@@ -83,12 +92,5 @@ ChangeLog:
 	  (echo A git checkout and git-log is required to generate ChangeLog >&2 && \
 	  echo A git checkout and git-log is required to generate this file >> $@); \
 	fi
-
-DISTCHECK_CONFIGURE_FLAGS = \
-  --disable-maintainer-mode
-
-GITIGNOREFILES = \
-  $(DIST_ARCHIVES) \
-  $(usbemu_libusbemu_dbus_la_SOURCES)
 
 -include $(top_srcdir)/git.mk
