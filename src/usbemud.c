@@ -24,8 +24,8 @@ static gboolean opt_version = FALSE;
 
 static GOptionEntry entries[] =
 {
-  { "debug", 'd', 0, G_OPTION_ARG_NONE, &opt_debug, "Print debugging information", NULL },
-  { "version", 'v', 0, G_OPTION_ARG_NONE, &opt_version, "Show version", NULL },
+  { "debug", 'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_debug, "Print debugging information", NULL },
+  { "version", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_version, "Show version", NULL },
   { NULL }
 };
 

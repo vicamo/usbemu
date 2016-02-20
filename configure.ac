@@ -61,7 +61,7 @@ LT_INIT([disable-static])
 # Create libtool early, because it's used in configure
 LT_OUTPUT
 
-PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.6 dnl
+PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.42 dnl
                               gio-2.0 >= 2.26 dnl
                               gio-unix-2.0 >= 2.24])
 
