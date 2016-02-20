@@ -66,5 +66,6 @@ PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.6 dnl
                               gio-unix-2.0 >= 2.24])
 
 AC_OUTPUT([
+  usbemu.pc
   Makefile
 ])

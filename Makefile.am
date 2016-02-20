@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
 bin_PROGRAMS =
-noinst_LTLIBRARIES =
+lib_LTLIBRARIES =
 
 EXTRA_DIST = \
   autogen.sh \
@@ -9,6 +9,7 @@ EXTRA_DIST = \
   README
 
 CLEANFILES =
+DISTCLEANFILES =
 
 GITIGNOREFILES = \
   $(DIST_ARCHIVES)
@@ -30,16 +31,22 @@ AM_CPPFLAGS = \
   -I$(top_builddir) \
   -I$(top_srcdir)
 
-noinst_LTLIBRARIES += \
-  usbemu/libusbemu-dbus.la
+lib_LTLIBRARIES += \
+  usbemu/libusbemu.la
 
-usbemu_libusbemu_dbus_la_SOURCES = \
+usbemu_libusbemu_la_SOURCES =
+usbemu_libusbemu_la_CFLAGS = \
+  $(BASE_DEPS_CFLAGS)
+usbemu_libusbemu_la_LIBADD = \
+  $(BASE_DEPS_LIBS)
+usbemu_libusbemu_la_LDFLAGS = \
+  -version-info $(LT_VERSION_INFO)
+
+libusbemu_dbus_csources = \
   usbemu/usbemu-dbus-manager.c \
   usbemu/usbemu-dbus-manager.h
-usbemu_libusbemu_dbus_la_CFLAGS = \
-  $(BASE_DEPS_CFLAGS)
-usbemu_libusbemu_dbus_la_LIBADD = \
-  $(BASE_DEPS_LIBS)
+
+usbemu_libusbemu_la_SOURCES += $(libusbemu_dbus_csources)
 
 define _make_usbemu_dbus_rule
 $(1): $(1:.c=.xml)
@@ -53,16 +60,20 @@ $(basename $(1)).h: $(1)
 	@true
 endef
 
-$(foreach f,$(filter %.c,$(usbemu_libusbemu_dbus_la_SOURCES)),$(eval $(call _make_usbemu_dbus_rule,$(f))))
+$(foreach f,$(filter %.c,$(libusbemu_dbus_csources)),$(eval $(call _make_usbemu_dbus_rule,$(f))))
 
 CLEANFILES += \
-  $(usbemu_libusbemu_dbus_la_SOURCES)
+  $(libusbemu_dbus_csources)
 
 GITIGNOREFILES += \
-  $(usbemu_libusbemu_dbus_la_SOURCES)
+  $(libusbemu_dbus_csources)
 
 EXTRA_DIST += \
   usbemu/usbemu-dbus-manager.xml
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = usbemu.pc
+DISTCLEANFILES += usbemu.pc
 
 bin_PROGRAMS += \
   src/usbemud
@@ -78,6 +89,9 @@ distclean-local:
 	if test "$(srcdir)" = "."; then :; else \
 	  rm -f ChangeLog; \
 	fi
+
+uninstall-local:
+	rm -f $(DESTDIR)$(pkgconfigdir)/usbemu.pc
 
 .PHONY: ChangeLog
 ChangeLog:
