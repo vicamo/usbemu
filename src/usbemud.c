@@ -47,26 +47,27 @@ on_name_acquired (GDBusConnection *connection,
   g_info ("message bus name acquired");
 }
 
-int
-main (int argc, char** argv)
+static void
+parse_arg (int   *argc,
+           char **argv[])
 {
   GOptionContext *context;
   GError *error = NULL;
 
   context = g_option_context_new ("- USB emulation service");
   g_option_context_add_main_entries (context, entries, NULL);
-  g_option_context_parse (context, &argc, &argv, &error);
+  g_option_context_parse (context, argc, argv, &error);
   g_option_context_free (context);
 
   if (error != NULL) {
     g_printerr ("option parsing failed: %s\n", error->message);
     g_error_free (error);
-    return 1;
+    exit (1);
   }
 
   if (opt_version) {
     g_print ("%s (%s)\n", g_get_prgname (), USBEMU_VERSION);
-    return 0;
+    exit (1);
   }
 
   if (opt_debug) {
@@ -84,9 +85,17 @@ main (int argc, char** argv)
       exit (1);
     }
   }
+}
 
+int
+main (int   argc,
+      char *argv[])
+{
   GBusType bus_type;
   guint owner_id;
+  GMainLoop *loop;
+
+  parse_arg (&argc, &argv);
 
   bus_type = (opt_session ? G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM);
   owner_id = g_bus_own_name (bus_type, opt_name,
@@ -94,7 +103,7 @@ main (int argc, char** argv)
                              NULL, on_name_acquired, NULL,
                              NULL, NULL);
 
-  GMainLoop *loop = g_main_loop_new (NULL, FALSE);
+  loop = g_main_loop_new (NULL, FALSE);
   g_main_loop_run (loop);
 
   g_bus_unown_name (owner_id);
