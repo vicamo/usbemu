@@ -79,11 +79,14 @@ bin_PROGRAMS += \
   src/usbemud
 
 src_usbemud_SOURCES = \
+  src/usbemu-manager.c \
+  src/usbemu-manager.h \
   src/usbemud.c
 src_usbemud_CFLAGS = \
   $(BASE_DEPS_CFLAGS)
 src_usbemud_LDADD = \
-  $(BASE_DEPS_LIBS)
+  $(BASE_DEPS_LIBS) \
+  usbemu/libusbemu.la
 
 distclean-local:
 	if test "$(srcdir)" = "."; then :; else \

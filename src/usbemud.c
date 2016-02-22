@@ -23,6 +23,8 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include "usbemu-manager.h"
+
 static gboolean opt_daemon = FALSE;
 static gboolean opt_debug = FALSE;
 static gchar * opt_name = "org.usbemu.UsbemuManager";
@@ -44,7 +46,17 @@ on_name_acquired (GDBusConnection *connection,
                   const gchar     *name,
                   gpointer         user_data)
 {
+  GDBusObjectManagerServer *obj_manager;
+  UsbemuManager *manager;
+
   g_info ("message bus name acquired");
+
+  obj_manager = g_dbus_object_manager_server_new ("/org/usbemu");
+  manager = usbemu_manager_new ("/org/usbemu/UsbemuManager");
+
+  g_dbus_object_manager_server_export (obj_manager, G_DBUS_OBJECT_SKELETON (manager));
+
+  g_dbus_object_manager_server_set_connection (obj_manager, connection);
 }
 
 static void
