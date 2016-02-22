@@ -31,6 +31,9 @@ AM_CPPFLAGS = \
   -I$(top_builddir) \
   -I$(top_srcdir)
 
+AM_CFLAGS = \
+  -Wall -Werror
+
 lib_LTLIBRARIES += \
   usbemu/libusbemu.la
 
