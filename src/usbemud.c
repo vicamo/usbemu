@@ -43,8 +43,8 @@ static GOptionEntry entries[] =
 
 static void
 on_name_acquired (GDBusConnection *connection,
-                  const gchar     *name,
-                  gpointer         user_data)
+                  const gchar     *name G_GNUC_UNUSED,
+                  gpointer         user_data G_GNUC_UNUSED)
 {
   GDBusObjectManagerServer *obj_manager;
   UsbemuManager *manager;
