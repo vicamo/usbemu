@@ -25,6 +25,20 @@ typedef struct  _UsbemuManagerPrivate {
   UsbemuDBusManagerSkeleton *manager_skeleton;
 } UsbemuManagerPrivate;
 
+/**
+ * UsbemuManager:
+ *
+ * Server side GDBusObjectSkeleton instance for UsbemuDBusManager.
+ */
+
+/**
+ * UsbemuManagerClass:
+ * @parent_class: The parent class.
+ * @padding: Reserved slots for furture extension.
+ *
+ * Class structure for UsbemuManager.
+ */
+
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuManager, usbemu_manager,
                             G_TYPE_DBUS_OBJECT_SKELETON)
 
@@ -78,6 +92,13 @@ usbemu_manager_init (UsbemuManager *manager G_GNUC_UNUSED)
   /* do nothing */
 }
 
+/**
+ * usbemu_manager_new:
+ * @object_path: An object path.
+ *
+ * Returns: (transfer full) (type UsbemuManager): The constructed manager object
+ *          or %NULL.
+ */
 UsbemuManager*
 usbemu_manager_new (const gchar *object_path)
 {
