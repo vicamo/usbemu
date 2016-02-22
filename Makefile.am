@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
+SUBDIRS = . docs/reference
+
 bin_PROGRAMS =
 lib_LTLIBRARIES =
 
@@ -19,10 +21,13 @@ MAINTAINERCLEANFILES = \
   $(GITIGNORE_MAINTAINERCLEANFILES_M4_LIBTOOL) \
   $(GITIGNORE_MAINTAINERCLEANFILES_MAKEFILE_IN) \
   $(srcdir)/ChangeLog \
+  $(srcdir)/gtk-doc.make \
   $(srcdir)/INSTALL \
+  $(srcdir)/m4/gtk-doc.m4 \
   $(srcdir)/README
 
 DISTCHECK_CONFIGURE_FLAGS = \
+  --enable-gtk-doc \
   --disable-maintainer-mode
 
 AM_CPPFLAGS = \
@@ -34,6 +39,9 @@ AM_CPPFLAGS = \
 AM_CFLAGS = \
   -Wall -Werror
 
+###############################
+## libusbemu - core
+
 lib_LTLIBRARIES += \
   usbemu/libusbemu.la
 
@@ -44,6 +52,9 @@ usbemu_libusbemu_la_LIBADD = \
   $(BASE_DEPS_LIBS)
 usbemu_libusbemu_la_LDFLAGS = \
   -version-info $(LT_VERSION_INFO)
+
+###############################
+## libusbemu - dbus
 
 libusbemu_dbus_csources = \
   usbemu/usbemu-dbus-manager.c \
@@ -74,9 +85,15 @@ GITIGNOREFILES += \
 EXTRA_DIST += \
   usbemu/usbemu-dbus-manager.xml
 
+###############################
+## pkg-config DATA
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = usbemu.pc
 DISTCLEANFILES += usbemu.pc
+
+###############################
+## usbemud
 
 bin_PROGRAMS += \
   src/usbemud
@@ -90,6 +107,9 @@ src_usbemud_CFLAGS = \
 src_usbemud_LDADD = \
   $(BASE_DEPS_LIBS) \
   usbemu/libusbemu.la
+
+GITIGNOREFILES += \
+  $(srcdir)/gtk-doc.m4
 
 distclean-local:
 	if test "$(srcdir)" = "."; then :; else \

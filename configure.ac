@@ -65,7 +65,12 @@ PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.42 dnl
                               gio-2.0 >= 2.26 dnl
                               gio-unix-2.0 >= 2.24])
 
+# GTK-DOC generation
+GTK_DOC_CHECK([1.20],[--flavour no-tmpl])
+
 AC_OUTPUT([
+  docs/reference/Makefile
+  docs/reference/version.xml
   usbemu.pc
   Makefile
 ])
