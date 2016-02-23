@@ -35,9 +35,9 @@ FIXXREF_OPTIONS =
 
 # Used for dependencies.
 HFILE_GLOB = \
-  $(top_srcdir)/usbemu/*.h
+  $(top_srcdir)/usbemu/dbus/*.h
 CFILE_GLOB = \
-  $(top_srcdir)/usbemu/*.c
+  $(top_srcdir)/usbemu/dbus/*.c
 
 # Header files to ignore when scanning.
 IGNORE_HFILES =

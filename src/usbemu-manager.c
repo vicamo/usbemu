@@ -17,7 +17,7 @@
 
 #include "config.h"
 
-#include <usbemu/usbemu-dbus-manager.h>
+#include <usbemu/dbus/usbemu-dbus-manager.h>
 
 #include "usbemu-manager.h"
 
