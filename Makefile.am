@@ -45,8 +45,12 @@ AM_CFLAGS = \
 lib_LTLIBRARIES += \
   usbemu/libusbemu.la
 
-usbemu_libusbemu_la_SOURCES =
+usbemu_libusbemu_la_SOURCES = \
+  usbemu/usbemu.h \
+  usbemu/usbemu-manager.c \
+  usbemu/usbemu-manager.h
 usbemu_libusbemu_la_CFLAGS = \
+  -DLIBUSBEMU_COMPILATION \
   $(BASE_DEPS_CFLAGS)
 usbemu_libusbemu_la_LIBADD = \
   $(BASE_DEPS_LIBS)
