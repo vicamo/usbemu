@@ -30,6 +30,8 @@ G_BEGIN_DECLS
 G_DECLARE_DERIVABLE_TYPE (UsbemuDevice, usbemu_device, USBEMU, DEVICE,
                           GObject)
 
+#define USBEMU_DEVICE_PROP_UDI "udi"
+
 struct _UsbemuDeviceClass {
   GObjectClass parent_class;
 
@@ -39,6 +41,8 @@ struct _UsbemuDeviceClass {
   gpointer padding[12];
 };
 
-UsbemuDevice* usbemu_device_new ();
+UsbemuDevice* usbemu_device_new (const gchar *udi);
+
+const gchar* usbemu_device_get_udi (UsbemuDevice *device);
 
 G_END_DECLS
