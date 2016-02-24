@@ -47,4 +47,9 @@
     <title>Client DBus API Reference</title>
     <xi:include href="xml/usbemu-dbus-manager.xml"/>
   </chapter>
+
+  <chapter id="core">
+    <title>Core Object API Reference</title>
+    <xi:include href="xml/usbemu-device.xml"/>
+  </chapter>
 </book>
