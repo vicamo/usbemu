@@ -106,6 +106,8 @@ bin_PROGRAMS += \
   src/usbemud
 
 src_usbemud_SOURCES = \
+  src/usbemu-dbus-device-object.c \
+  src/usbemu-dbus-device-object.h \
   src/usbemu-dbus-manager-object.c \
   src/usbemu-dbus-manager-object.h \
   src/usbemud.c
