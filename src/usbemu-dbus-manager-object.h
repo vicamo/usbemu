@@ -22,18 +22,18 @@
 
 G_BEGIN_DECLS
 
-#define USBEMU_TYPE_MANAGER  (usbemu_manager_get_type ())
+#define USBEMU_TYPE_DBUS_MANAGER_OBJECT  (usbemu_dbus_manager_object_get_type ())
 
-G_DECLARE_DERIVABLE_TYPE (UsbemuManager, usbemu_manager, USBEMU, MANAGER,
-                          GDBusObjectSkeleton)
+G_DECLARE_DERIVABLE_TYPE (UsbemuDBusManagerObject, usbemu_dbus_manager_object,
+                          USBEMU, DBUS_MANAGER_OBJECT, GDBusObjectSkeleton)
 
-struct _UsbemuManagerClass {
+struct _UsbemuDBusManagerObjectClass {
   GDBusObjectSkeletonClass parent_class;
 
   /*< private >*/
   gpointer padding[12];
 };
 
-UsbemuManager* usbemu_manager_new (const gchar *object_path);
+UsbemuDBusManagerObject* usbemu_dbus_manager_object_new (const gchar *object_path);
 
 G_END_DECLS

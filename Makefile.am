@@ -106,8 +106,8 @@ bin_PROGRAMS += \
   src/usbemud
 
 src_usbemud_SOURCES = \
-  src/usbemu-manager.c \
-  src/usbemu-manager.h \
+  src/usbemu-dbus-manager-object.c \
+  src/usbemu-dbus-manager-object.h \
   src/usbemud.c
 src_usbemud_CFLAGS = \
   $(BASE_DEPS_CFLAGS)

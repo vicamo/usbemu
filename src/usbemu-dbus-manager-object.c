@@ -19,25 +19,25 @@
 
 #include <usbemu/dbus/usbemu-dbus-manager.h>
 
-#include "usbemu-manager.h"
+#include "usbemu-dbus-manager-object.h"
 
-typedef struct  _UsbemuManagerPrivate {
+typedef struct  _UsbemuDBusManagerObjectPrivate {
   UsbemuDBusManagerSkeleton *manager_skeleton;
-} UsbemuManagerPrivate;
+} UsbemuDBusManagerObjectPrivate;
 
-G_DEFINE_TYPE_WITH_PRIVATE (UsbemuManager, usbemu_manager,
+G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDBusManagerObject, usbemu_dbus_manager_object,
                             G_TYPE_DBUS_OBJECT_SKELETON)
 
-#define USBEMU_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), USBEMU_TYPE_MANAGER, UsbemuManagerPrivate))
+#define USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), USBEMU_TYPE_DBUS_MANAGER_OBJECT, UsbemuDBusManagerObjectPrivate))
 
 static void
 constructed (GObject *object)
 {
-  UsbemuManager *manager = USBEMU_MANAGER (object);
-  UsbemuManagerPrivate *priv = USBEMU_MANAGER_GET_PRIVATE (manager);
+  UsbemuDBusManagerObject *manager = USBEMU_DBUS_MANAGER_OBJECT (object);
+  UsbemuDBusManagerObjectPrivate *priv = USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
   UsbemuDBusManagerSkeleton *manager_skeleton;
 
-  G_OBJECT_CLASS (usbemu_manager_parent_class)->constructed (object);
+  G_OBJECT_CLASS (usbemu_dbus_manager_object_parent_class)->constructed (object);
 
   /* setup UsbemuDBusManagerSkeleton */
   priv->manager_skeleton = manager_skeleton =
@@ -53,8 +53,8 @@ constructed (GObject *object)
 static void
 dispose (GObject *object)
 {
-  UsbemuManager *manager = USBEMU_MANAGER (object);
-  UsbemuManagerPrivate *priv = USBEMU_MANAGER_GET_PRIVATE (manager);
+  UsbemuDBusManagerObject *manager = USBEMU_DBUS_MANAGER_OBJECT (object);
+  UsbemuDBusManagerObjectPrivate *priv = USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
 
   g_dbus_object_skeleton_remove_interface (G_DBUS_OBJECT_SKELETON (object),
                                            G_DBUS_INTERFACE_SKELETON (priv->manager_skeleton));
@@ -63,7 +63,7 @@ dispose (GObject *object)
 }
 
 static void
-usbemu_manager_class_init (UsbemuManagerClass *manager_class)
+usbemu_dbus_manager_object_class_init (UsbemuDBusManagerObjectClass *manager_class)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (manager_class);
 
@@ -73,15 +73,15 @@ usbemu_manager_class_init (UsbemuManagerClass *manager_class)
 }
 
 static void
-usbemu_manager_init (UsbemuManager *manager G_GNUC_UNUSED)
+usbemu_dbus_manager_object_init (UsbemuDBusManagerObject *manager G_GNUC_UNUSED)
 {
   /* do nothing */
 }
 
-UsbemuManager*
-usbemu_manager_new (const gchar *object_path)
+UsbemuDBusManagerObject*
+usbemu_dbus_manager_object_new (const gchar *object_path)
 {
   g_return_val_if_fail (g_variant_is_object_path (object_path), NULL);
 
-  return g_object_new (USBEMU_TYPE_MANAGER, "g-object-path", object_path, NULL);
+  return g_object_new (USBEMU_TYPE_DBUS_MANAGER_OBJECT, "g-object-path", object_path, NULL);
 }
