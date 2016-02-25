@@ -28,13 +28,16 @@ typedef struct  _UsbemuDBusManagerObjectPrivate {
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDBusManagerObject, usbemu_dbus_manager_object,
                             G_TYPE_DBUS_OBJECT_SKELETON)
 
-#define USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), USBEMU_TYPE_DBUS_MANAGER_OBJECT, UsbemuDBusManagerObjectPrivate))
+#define USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE(o) \
+  (G_TYPE_INSTANCE_GET_PRIVATE ((o), USBEMU_TYPE_DBUS_MANAGER_OBJECT, \
+                                UsbemuDBusManagerObjectPrivate))
 
 static void
 constructed (GObject *object)
 {
   UsbemuDBusManagerObject *manager = USBEMU_DBUS_MANAGER_OBJECT (object);
-  UsbemuDBusManagerObjectPrivate *priv = USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
+  UsbemuDBusManagerObjectPrivate *priv =
+    USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
   UsbemuDBusManagerSkeleton *manager_skeleton;
 
   G_OBJECT_CLASS (usbemu_dbus_manager_object_parent_class)->constructed (object);
@@ -54,7 +57,8 @@ static void
 dispose (GObject *object)
 {
   UsbemuDBusManagerObject *manager = USBEMU_DBUS_MANAGER_OBJECT (object);
-  UsbemuDBusManagerObjectPrivate *priv = USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
+  UsbemuDBusManagerObjectPrivate *priv =
+    USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
 
   g_dbus_object_skeleton_remove_interface (G_DBUS_OBJECT_SKELETON (object),
                                            G_DBUS_INTERFACE_SKELETON (priv->manager_skeleton));
@@ -83,5 +87,7 @@ usbemu_dbus_manager_object_new (const gchar *object_path)
 {
   g_return_val_if_fail (g_variant_is_object_path (object_path), NULL);
 
-  return g_object_new (USBEMU_TYPE_DBUS_MANAGER_OBJECT, "g-object-path", object_path, NULL);
+  return g_object_new (USBEMU_TYPE_DBUS_MANAGER_OBJECT,
+                       "g-object-path", object_path,
+                       NULL);
 }
