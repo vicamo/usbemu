@@ -68,6 +68,9 @@ PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.42 dnl
 # GTK-DOC generation
 GTK_DOC_CHECK([1.20],[--flavour no-tmpl])
 
+GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
+AC_SUBST(GLIB_MKENUMS)
+
 AC_OUTPUT([
   docs/reference/Makefile
   docs/reference/version.xml

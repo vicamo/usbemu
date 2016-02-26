@@ -10,6 +10,7 @@ EXTRA_DIST = \
   INSTALL \
   README
 
+BUILT_SOURCES =
 CLEANFILES =
 DISTCLEANFILES =
 
@@ -48,7 +49,8 @@ lib_LTLIBRARIES += \
 usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu.h \
   usbemu/usbemu-device.c \
-  usbemu/usbemu-device.h
+  usbemu/usbemu-device.h \
+  usbemu/usbemu-errors.h
 usbemu_libusbemu_la_CFLAGS = \
   -DLIBUSBEMU_COMPILATION \
   $(BASE_DEPS_CFLAGS)
@@ -56,6 +58,44 @@ usbemu_libusbemu_la_LIBADD = \
   $(BASE_DEPS_LIBS)
 usbemu_libusbemu_la_LDFLAGS = \
   -version-info $(LT_VERSION_INFO)
+
+###############################
+## libusbemu - enums
+
+libusbemu_enum_csources = \
+  usbemu/usbemu-enums.c \
+  usbemu/usbemu-enums.h
+
+libusbemu_enum_cheaders = \
+  usbemu/usbemu-errors.h
+
+$(libusbemu_enum_csources): Makefile.am $(libusbemu_enum_cheaders) $(libusbemu_enum_csources:=.template)
+	$(AM_V_GEN) $(GLIB_MKENUMS) \
+	  --template $@.template \
+	  $(libusbemu_enum_cheaders) > $@
+
+BUILT_SOURCES += $(libusbemu_enum_csources)
+usbemu_libusbemu_la_SOURCES += $(libusbemu_enum_csources)
+
+EXTRA_DIST += \
+   $(libusbemu_enum_csources:=.template)
+
+###############################
+## libusbemu - errors
+
+libusbemu_error_csources = \
+  usbemu/usbemu-errors.c
+
+$(libusbemu_error_csources): Makefile.am usbemu/usbemu-errors.h $(libusbemu_error_csources:=.template)
+	$(AM_V_GEN) $(GLIB_MKENUMS) \
+	  --template $@.template \
+	  usbemu/usbemu-errors.h > $@
+
+BUILT_SOURCES += $(libusbemu_error_csources)
+usbemu_libusbemu_la_SOURCES += $(libusbemu_error_csources)
+
+EXTRA_DIST += \
+   $(libusbemu_error_csources:=.template)
 
 ###############################
 ## libusbemu - dbus
@@ -66,6 +106,7 @@ libusbemu_dbus_csources = \
   usbemu/dbus/usbemu-dbus-manager.c \
   usbemu/dbus/usbemu-dbus-manager.h
 
+BUILT_SOURCES += $(libusbemu_dbus_csources)
 usbemu_libusbemu_la_SOURCES += $(libusbemu_dbus_csources)
 
 define _make_usbemu_dbus_rule
@@ -81,12 +122,6 @@ $(basename $(1)).h: $(1)
 endef
 
 $(foreach f,$(filter %.c,$(libusbemu_dbus_csources)),$(eval $(call _make_usbemu_dbus_rule,$(f))))
-
-CLEANFILES += \
-  $(libusbemu_dbus_csources)
-
-GITIGNOREFILES += \
-  $(libusbemu_dbus_csources)
 
 EXTRA_DIST += \
   usbemu/dbus/usbemu-dbus-device.xml \
@@ -141,5 +176,8 @@ ChangeLog:
 	  (echo A git checkout and git-log is required to generate ChangeLog >&2 && \
 	  echo A git checkout and git-log is required to generate this file >> $@); \
 	fi
+
+CLEANFILES += $(BUILT_SOURCES)
+GITIGNOREFILES += $(BUILT_SOURCES)
 
 -include $(top_srcdir)/git.mk
