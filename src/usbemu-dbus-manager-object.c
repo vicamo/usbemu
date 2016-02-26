@@ -17,11 +17,14 @@
 
 #include "config.h"
 
+#include <usbemu/usbemu.h>
 #include <usbemu/dbus/usbemu-dbus-manager.h>
 
 #include "usbemu-dbus-manager-object.h"
 
 typedef struct  _UsbemuDBusManagerObjectPrivate {
+  GDBusObjectManagerServer *object_manager;
+
   UsbemuDBusManagerSkeleton *manager_skeleton;
 } UsbemuDBusManagerObjectPrivate;
 
@@ -49,6 +52,7 @@ constructed (GObject *object)
 
   usbemu_dbus_manager_set_version (USBEMU_DBUS_MANAGER (manager_skeleton),
                                    USBEMU_VERSION);
+
   g_dbus_object_skeleton_add_interface (G_DBUS_OBJECT_SKELETON (manager),
                                         G_DBUS_INTERFACE_SKELETON (manager_skeleton));
 }
@@ -83,11 +87,30 @@ usbemu_dbus_manager_object_init (UsbemuDBusManagerObject *manager G_GNUC_UNUSED)
 }
 
 UsbemuDBusManagerObject*
-usbemu_dbus_manager_object_new (const gchar *object_path)
+usbemu_dbus_manager_object_new ()
 {
-  g_return_val_if_fail (g_variant_is_object_path (object_path), NULL);
-
   return g_object_new (USBEMU_TYPE_DBUS_MANAGER_OBJECT,
-                       "g-object-path", object_path,
+                       "g-object-path", USBEMU_DBUS_MANAGER_PATH,
                        NULL);
+}
+
+gboolean
+usbemu_dbus_manager_object_start (UsbemuDBusManagerObject *manager,
+                                  GDBusConnection *connection)
+{
+  UsbemuDBusManagerObjectPrivate *priv;
+
+  g_return_val_if_fail (G_IS_DBUS_CONNECTION (connection), FALSE);
+  g_return_val_if_fail (USBEMU_IS_DBUS_MANAGER_OBJECT (manager), FALSE);
+
+  priv = USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
+  g_return_val_if_fail (priv->object_manager == NULL, FALSE);
+
+  priv->object_manager = g_dbus_object_manager_server_new (USBEMU_DBUS_PATH);
+  g_dbus_object_manager_server_export (priv->object_manager,
+                                       G_DBUS_OBJECT_SKELETON (manager));
+
+  g_dbus_object_manager_server_set_connection (priv->object_manager,
+                                               connection);
+  return TRUE;
 }

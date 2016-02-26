@@ -34,6 +34,9 @@ struct _UsbemuDBusManagerObjectClass {
   gpointer padding[12];
 };
 
-UsbemuDBusManagerObject* usbemu_dbus_manager_object_new (const gchar *object_path);
+UsbemuDBusManagerObject* usbemu_dbus_manager_object_new ();
+
+gboolean usbemu_dbus_manager_object_start (UsbemuDBusManagerObject *manager,
+                                           GDBusConnection         *connection);
 
 G_END_DECLS
