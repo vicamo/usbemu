@@ -23,6 +23,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include <usbemu/usbemu.h>
 #include "usbemu-dbus-manager-object.h"
 
 static gboolean opt_daemon = FALSE;
@@ -51,8 +52,8 @@ on_name_acquired (GDBusConnection *connection,
 
   g_info ("message bus name acquired");
 
-  obj_manager = g_dbus_object_manager_server_new ("/org/usbemu");
-  manager = usbemu_dbus_manager_object_new ("/org/usbemu/UsbemuManager");
+  obj_manager = g_dbus_object_manager_server_new (USBEMU_DBUS_PATH);
+  manager = usbemu_dbus_manager_object_new (USBEMU_DBUS_MANAGER_PATH);
 
   g_dbus_object_manager_server_export (obj_manager, G_DBUS_OBJECT_SKELETON (manager));
 
