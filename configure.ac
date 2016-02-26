@@ -71,6 +71,9 @@ GTK_DOC_CHECK([1.20],[--flavour no-tmpl])
 GLIB_MKENUMS=`$PKG_CONFIG --variable=glib_mkenums glib-2.0`
 AC_SUBST(GLIB_MKENUMS)
 
+GDBUS_CODEGEN=`$PKG_CONFIG --variable=gdbus_codegen gio-2.0`
+AC_SUBST(GDBUS_CODEGEN)
+
 AC_OUTPUT([
   docs/reference/Makefile
   docs/reference/version.xml
