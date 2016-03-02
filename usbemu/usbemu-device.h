@@ -22,6 +22,7 @@
 #endif
 
 #include <glib-object.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 
@@ -44,5 +45,19 @@ struct _UsbemuDeviceClass {
 UsbemuDevice* usbemu_device_new (const gchar *udi);
 
 const gchar* usbemu_device_get_udi (UsbemuDevice *device);
+
+void     usbemu_device_bind          (UsbemuDevice        *device,
+                                      GCancellable        *cancellable,
+                                      GAsyncReadyCallback  callback,
+                                      gpointer             user_data);
+gboolean usbemu_device_bind_finish   (GAsyncResult        *result,
+                                      GError             **error);
+void     usbemu_device_unbind        (UsbemuDevice        *device,
+                                      GCancellable        *cancellable,
+                                      GAsyncReadyCallback  callback,
+                                      gpointer             user_data);
+gboolean usbemu_device_unbind_finish (GAsyncResult        *result,
+                                      GError             **error);
+gboolean usbemu_device_get_bound     (UsbemuDevice        *device);
 
 G_END_DECLS

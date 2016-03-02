@@ -4,6 +4,21 @@
     org.usbemu.UsbemuManager.Device:
   -->
   <interface name="org.usbemu.UsbemuManager.Device">
+    <!-- Bind: Bind to underlying hardware. -->
+    <method name="Bind"/>
+
+    <!-- Bind: Unbind from underlying hardware. -->
+    <method name="Unbind"/>
+
+    <!-- DeviceBound: Notifies device is bound. -->
+    <signal name="DeviceBound"/>
+
+    <!-- DeviceBound: Notifies device is unbound. -->
+    <signal name="DeviceUnbound"/>
+
+    <!-- Bound: Indicates whether device is currently bound. -->
+    <property name="Bound" type="b" access="read"/>
+
     <!--
       Udi:
 
