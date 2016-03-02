@@ -20,6 +20,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include "usbemu/usbemu.h"
 #include "usbemu-dbus-manager-object.h"
 
 static gboolean opt_daemon = FALSE;
@@ -32,7 +33,8 @@ static GOptionEntry entries[] =
 {
   { "daemon", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_debug, "Run as daemon", NULL },
   { "debug", 'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_debug, "Print debugging information", NULL },
-  { "name", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &opt_name, "DBus name NAME to acquire. Default: \"org.usbemu.UsbemuManager\"", "NAME" },
+  { "name", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &opt_name,
+    "DBus name NAME to acquire. Default: \"" USBEMU_DBUS_PREFIX "\"", "NAME" },
   { "session", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_session, "Bind to DBus session bus", NULL },
   { "version", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_version, "Show version", NULL },
   { NULL }
