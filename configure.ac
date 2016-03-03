@@ -74,9 +74,11 @@ AC_SUBST(GLIB_MKENUMS)
 GDBUS_CODEGEN=`$PKG_CONFIG --variable=gdbus_codegen gio-2.0`
 AC_SUBST(GDBUS_CODEGEN)
 
-AC_OUTPUT([
+AC_CONFIG_FILES([
   docs/reference/Makefile
   docs/reference/version.xml
   usbemu.pc
   Makefile
 ])
+
+AC_OUTPUT
