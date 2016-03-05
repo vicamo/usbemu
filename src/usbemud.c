@@ -42,15 +42,43 @@ static GOptionEntry entries[] =
   { NULL }
 };
 
+static GMainLoop *loop;
+static UsbemuDBusManagerObject *manager;
+
+static void
+on_bus_acquired (GDBusConnection *connection G_GNUC_UNUSED,
+                 const gchar     *name G_GNUC_UNUSED,
+                 gpointer         user_data G_GNUC_UNUSED)
+{
+  g_info ("message bus acquired");
+
+  manager = usbemu_dbus_manager_object_new ();
+  if (manager == NULL) {
+    g_warning ("Could not create manager");
+    g_main_loop_quit (loop);
+    return;
+  }
+}
+
 static void
 on_name_acquired (GDBusConnection *connection,
                   const gchar     *name G_GNUC_UNUSED,
                   gpointer         user_data G_GNUC_UNUSED)
 {
-  g_info ("message bus name acquired");
+  g_info ("message bus name '%s' acquired", opt_name);
 
-  usbemu_dbus_manager_object_start (usbemu_dbus_manager_object_new (),
-                                    connection);
+  usbemu_dbus_manager_object_start (manager, connection);
+}
+
+static void
+on_name_lost (GDBusConnection *connection G_GNUC_UNUSED,
+              const gchar     *name G_GNUC_UNUSED,
+              gpointer         user_data G_GNUC_UNUSED)
+{
+  g_info ("message bus name '%s' lost", opt_name);
+
+  g_object_unref (manager);
+  manager = NULL;
 }
 
 static void
@@ -99,21 +127,24 @@ main (int   argc,
 {
   GBusType bus_type;
   guint owner_id;
-  GMainLoop *loop;
 
   parse_arg (&argc, &argv);
+
+  g_info ("starting %s (%s)", g_get_prgname (), USBEMU_VERSION);
 
   bus_type = (opt_session ? G_BUS_TYPE_SESSION : G_BUS_TYPE_SYSTEM);
   owner_id = g_bus_own_name (bus_type, opt_name,
                              G_BUS_NAME_OWNER_FLAGS_NONE,
-                             NULL, on_name_acquired, NULL,
+                             on_bus_acquired, on_name_acquired, on_name_lost,
                              NULL, NULL);
 
   loop = g_main_loop_new (NULL, FALSE);
   g_main_loop_run (loop);
+  g_main_loop_unref (loop);
 
   g_bus_unown_name (owner_id);
-  g_main_loop_unref (loop);
+
+  g_info ("shutting down %s", g_get_prgname ());
 
   return 0;
 }
