@@ -62,7 +62,7 @@ LT_INIT([disable-static])
 LT_OUTPUT
 
 PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.42 dnl
-                              gio-2.0 >= 2.26 dnl
+                              gio-2.0 >= 2.37 dnl
                               gio-unix-2.0 >= 2.24])
 
 # GTK-DOC generation
