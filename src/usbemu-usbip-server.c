@@ -54,10 +54,37 @@ enum
 
 static GParamSpec *props[N_PROPERTIES] = { NULL, };
 
+void
+on_input_ready (GBufferedInputStream     *bistream,
+                GAsyncResult             *res,
+                UsbemuUsbipServerPrivate *priv)
+{
+  GError *error = NULL;
+
+  if (-1 == g_buffered_input_stream_fill_finish (bistream, res, &error)) {
+    g_warning ("failed to read from input stream: %s", error->message);
+  }
+}
+
+static void
+add_connection (UsbemuUsbipServerPrivate *priv,
+                GIOStream                *iostream)
+{
+  g_hash_table_add (priv->pool, g_object_ref (iostream));
+
+  GInputStream *istream = g_io_stream_get_input_stream (iostream);
+  GBufferedInputStream *bistream = g_buffered_input_stream_new (istream);
+
+  GCancellable *cancellable = g_cancellable_new ();
+  g_buffered_input_stream_fill_async (bistream, -1, G_PRIORITY_DEFAULT,
+                                      cancellable, on_input_ready, priv);
+}
+
 static void
 remove_connection (UsbemuUsbipServerPrivate *priv,
                    GIOStream                *iostream)
 {
+  g_io_stream_close (iostream, NULL, NULL);
   g_hash_table_remove (priv->pool, iostream);
 }
 
@@ -226,9 +253,8 @@ usbemu_usbip_server_add_iostream (UsbemuUsbipServer *server,
   g_return_if_fail (G_IS_IO_STREAM (iostream));
 
   priv = USBEMU_USBIP_SERVER_GET_PRIVATE (server);
-  if (g_hash_table_contains (priv->pool, iostream)) {
-    return;
-  }
 
-  g_hash_table_add (priv->pool, g_object_ref (iostream));
+  if (!g_hash_table_contains (priv->pool, iostream)) {
+    add_connection (priv, iostream);
+  }
 }

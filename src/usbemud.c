@@ -26,6 +26,7 @@
 
 #include "usbemu/usbemu.h"
 #include "usbemu-dbus-manager-object.h"
+#include "usbemu-usbip-server.h"
 
 static gboolean opt_daemon = FALSE;
 static gboolean opt_ipv4 = FALSE;
@@ -53,6 +54,7 @@ static GOptionEntry entries[] =
 static GMainLoop *loop;
 static UsbemuDBusManagerObject *manager;
 static GSocketService *sock_service;
+static UsbemuUsbipServer *usbip_server;
 
 static void
 on_sock_event (GSocketListener     *listener G_GNUC_UNUSED,
@@ -82,11 +84,20 @@ on_sock_event (GSocketListener     *listener G_GNUC_UNUSED,
 }
 
 static gboolean
-on_sock_incoming (GSocketConnection *connection G_GNUC_UNUSED,
+on_sock_incoming (GSocketConnection *connection,
                   GObject           *source_object G_GNUC_UNUSED,
                   gpointer           user_data G_GNUC_UNUSED)
 {
-  return FALSE;
+  if (NULL == usbip_server) {
+    usbip_server = usbemu_usbip_server_new (manager);
+    if (NULL == usbip_server) {
+      g_warning ("Couldn't create usbip server.");
+      return FALSE;
+    }
+  }
+
+  usbemu_usbip_server_add_iostream (usbip_server, G_IO_STREAM (connection));
+  return TRUE;
 }
 
 static void
