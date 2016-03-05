@@ -15,7 +15,9 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined (HAVE_CONFIG_H)
 #include "config.h"
+#endif
 
 #include <usbemu/dbus/usbemu-dbus-device.h>
 
