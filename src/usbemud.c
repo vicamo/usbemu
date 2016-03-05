@@ -27,7 +27,7 @@
 
 static gboolean opt_daemon = FALSE;
 static gboolean opt_debug = FALSE;
-static gchar * opt_name = "org.usbemu.UsbemuManager";
+static gchar * opt_name = USBEMU_DBUS_PREFIX;
 static gboolean opt_session = FALSE;
 static gboolean opt_version = FALSE;
 
