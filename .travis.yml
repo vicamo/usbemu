@@ -10,6 +10,10 @@ env:
 
 before_install:
   - docker pull $CI_DOCKER_IMAGE
+  - pip install codecov
 
 script:
   - docker run -t --rm -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR -w $TRAVIS_BUILD_DIR $CI_DOCKER_IMAGE ./travis.sh
+
+after_success:
+  - codecov
