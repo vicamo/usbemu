@@ -27,9 +27,12 @@
 
 /* Prefix for object paths */
 #define USBEMU_DBUS_MANAGER_PATH USBEMU_DBUS_PATH "/UsbemuManager"
+#define USBEMU_DBUS_DEVICE_PATH  USBEMU_DBUS_MANAGER_PATH "/Devices"
+
+#define USBEMU_DBUS_PREFIX "org.usbemu.UsbemuManager"
 
 /* Prefix for DBus errors */
-#define USBEMU_DBUS_ERROR_PREFIX "org.usbemu.UsbemuManager.Error"
+#define USBEMU_DBUS_ERROR_PREFIX USBEMU_DBUS_PREFIX ".Error"
 
 /**
  * UsbemuManagerError:

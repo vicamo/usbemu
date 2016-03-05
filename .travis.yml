@@ -1,0 +1,13 @@
+sudo: required
+
+language: c
+
+services:
+  - docker
+
+env:
+  - CI_DOCKER_IMAGE=buildpack-deps:sid
+before_install:
+  - docker pull $CI_DOCKER_IMAGE
+script:
+  - docker run -t --rm -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR $CI_DOCKER_IMAGE bash -c "apt-get -qq update && apt-get install --no-install-recommends -y build-essential libglib2.0-dev gtk-doc-tools && gcc --version && cd $TRAVIS_BUILD_DIR && ./autogen.sh --enable-gtk-doc && make V=1 && make install V=1 DESTDIR=$(pwd)/x && rm -rf $(pwd)/x && make V=1 install && make V=1 clean && git status"

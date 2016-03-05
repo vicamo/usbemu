@@ -111,7 +111,7 @@ usbemu_libusbemu_la_SOURCES += $(libusbemu_dbus_csources)
 
 define _make_usbemu_dbus_rule
 $(1): $(1:.c=.xml)
-	$$(AM_V_GEN) gdbus-codegen \
+	$$(AM_V_GEN) $(GDBUS_CODEGEN) \
 	  --generate-c-code $$(basename $$@) \
 	  --c-namespace UsbemuDBus \
 	  --interface-prefix org.usbemu.UsbemuManager \

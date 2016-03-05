@@ -1,18 +1,15 @@
 /* usbemu - USB Emulation Library
  * Copyright (C) 2016 You-Sheng Yang
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
- * This library is distributed in the hope that it will be useful,
+ * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details:
  */
 
 #if defined (HAVE_CONFIG_H)
@@ -25,6 +22,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include "usbemu/usbemu.h"
 #include "usbemu-dbus-manager-object.h"
 
 static gboolean opt_daemon = FALSE;
@@ -37,7 +35,8 @@ static GOptionEntry entries[] =
 {
   { "daemon", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_debug, "Run as daemon", NULL },
   { "debug", 'd', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_debug, "Print debugging information", NULL },
-  { "name", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &opt_name, "DBus name NAME to acquire. Default: \"org.usbemu.UsbemuManager\"", "NAME" },
+  { "name", 'n', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &opt_name,
+    "DBus name NAME to acquire. Default: \"" USBEMU_DBUS_PREFIX "\"", "NAME" },
   { "session", 's', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_session, "Bind to DBus session bus", NULL },
   { "version", 'v', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_version, "Show version", NULL },
   { NULL }
@@ -48,17 +47,10 @@ on_name_acquired (GDBusConnection *connection,
                   const gchar     *name G_GNUC_UNUSED,
                   gpointer         user_data G_GNUC_UNUSED)
 {
-  GDBusObjectManagerServer *obj_manager;
-  UsbemuDBusManagerObject *manager;
-
   g_info ("message bus name acquired");
 
-  obj_manager = g_dbus_object_manager_server_new ("/org/usbemu");
-  manager = usbemu_dbus_manager_object_new ("/org/usbemu/UsbemuManager");
-
-  g_dbus_object_manager_server_export (obj_manager, G_DBUS_OBJECT_SKELETON (manager));
-
-  g_dbus_object_manager_server_set_connection (obj_manager, connection);
+  usbemu_dbus_manager_object_start (usbemu_dbus_manager_object_new (),
+                                    connection);
 }
 
 static void
