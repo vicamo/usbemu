@@ -36,4 +36,7 @@ UsbemuDBusManagerObject* usbemu_dbus_manager_object_new ();
 gboolean usbemu_dbus_manager_object_start (UsbemuDBusManagerObject *manager,
                                            GDBusConnection         *connection);
 
+GList*
+usbemu_dbus_manager_object_get_devices (UsbemuDBusManagerObject *manager);
+
 G_END_DECLS
