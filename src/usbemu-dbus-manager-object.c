@@ -264,3 +264,36 @@ usbemu_dbus_manager_object_start (UsbemuDBusManagerObject *manager,
                                                connection);
   return TRUE;
 }
+
+/**
+ * usbemu_dbus_manager_object_get_devices:
+ * @manager: A #UsbemuDBusManagerObject.
+ *
+ * Gets the all the #UsbemuDBusDeviceObject objects of @manager.
+ *
+ * Returns: (transfer full) (element-type UsbemuDBusDeviceObject): A list of
+ *          #UsbemuDBusDeviceObject. The returned list should be freed with
+ *          g_list_free_full() after each element has been freed with
+ *          g_object_unref().
+ */
+GList*
+usbemu_dbus_manager_object_get_devices (UsbemuDBusManagerObject *manager)
+{
+  UsbemuDBusManagerObjectPrivate *priv;
+  GList *ret;
+  GHashTableIter iter;
+  GObject *device;
+
+  g_return_val_if_fail (USBEMU_IS_DBUS_MANAGER_OBJECT (manager), FALSE);
+
+  priv = USBEMU_DBUS_MANAGER_OBJECT_GET_PRIVATE (manager);
+  ret = NULL;
+  device = NULL;
+
+  g_hash_table_iter_init (&iter, priv->device_path_hash);
+  while (g_hash_table_iter_next (&iter, NULL, (gpointer) &device)) {
+    ret = g_list_prepend (ret, g_object_ref (device));
+  }
+
+  return ret;
+}
