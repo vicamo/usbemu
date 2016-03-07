@@ -63,8 +63,7 @@ LT_OUTPUT
 
 PKG_CHECK_MODULES(BASE_DEPS, [glib-2.0 >= 2.42 dnl
                               gio-2.0 >= 2.37 dnl
-                              gio-unix-2.0 >= 2.24 dnl
-                              gobject-2.0 >= 2.36])
+                              gio-unix-2.0 >= 2.24])
 
 # GTK-DOC generation
 GTK_DOC_CHECK([1.20],[--flavour no-tmpl])
