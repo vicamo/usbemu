@@ -163,8 +163,11 @@ src_usbemud_LDADD = \
 bin_PROGRAMS += \
   plugins/usbip/usbip
 
-plugins_usbip_usbip_SROUCES = \
-  plugins/usbip/usbip.c
+plugins_usbip_usbip_SOURCES = \
+  plugins/usbip/usbip.c \
+  plugins/usbip/usbip.h \
+  plugins/usbip/usbip-dbus.c \
+  plugins/usbip/usbip-list.c
 plugins_usbip_usbip_CFLAGS = \
   $(BASE_DEPS_CFLAGS)
 plugins_usbip_usbip_LDADD = \

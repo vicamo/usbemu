@@ -35,8 +35,8 @@ typedef struct {
 
 static gboolean opt_debug = FALSE;
 static gboolean opt_log = FALSE;
-static gchar * opt_name = USBEMU_DBUS_PREFIX;
-static gboolean opt_session = FALSE;
+extern gchar * opt_name;
+extern gboolean opt_session;
 static gchar **opt_commands;
 
 static const GOptionEntry main_entries[] =
@@ -67,11 +67,16 @@ static void do_help    (int   argc,
                         char *argv[]);
 static void do_version (int   argc,
                         char *argv[]);
+extern void do_list    (int   argc,
+                        char *argv[]);
+
+extern const GOptionEntry list_entries[];
 
 static const UsbipCmdEntry commands[] =
 {
   { "help", help_entries, do_help, "Command 'help' Options:", "" },
   { "version", NULL, do_version, "Command 'version' Options:", "" },
+  { "list", list_entries, do_list, "Command 'list' Options:", "" },
   { NULL }
 };
 
