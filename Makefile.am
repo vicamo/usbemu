@@ -157,6 +157,20 @@ src_usbemud_LDADD = \
   $(BASE_DEPS_LIBS) \
   usbemu/libusbemu.la
 
+###############################
+## plugins/usbip
+
+bin_PROGRAMS += \
+  plugins/usbip/usbip
+
+plugins_usbip_usbip_SROUCES = \
+  plugins/usbip/usbip.c
+plugins_usbip_usbip_CFLAGS = \
+  $(BASE_DEPS_CFLAGS)
+plugins_usbip_usbip_LDADD = \
+  $(BASE_DEPS_LIBS) \
+  usbemu/libusbemu.la
+
 GITIGNOREFILES += \
   $(srcdir)/gtk-doc.m4
 
