@@ -100,15 +100,20 @@ EXTRA_DIST += \
 ###############################
 ## libusbemu - dbus
 
-libusbemu_dbus_csources = \
+usbemu_libusbemu_la_SOURCES += \
+  usbemu/dbus/usbemu-dbus-object-manager.c \
+  usbemu/dbus/usbemu-dbus-object-manager.h
+
+libusbemu_dbus_built_csources = \
   usbemu/dbus/usbemu-dbus-device.c \
   usbemu/dbus/usbemu-dbus-device.h \
   usbemu/dbus/usbemu-dbus-manager.c \
   usbemu/dbus/usbemu-dbus-manager.h
 
-BUILT_SOURCES += $(libusbemu_dbus_csources)
-usbemu_libusbemu_la_SOURCES += $(libusbemu_dbus_csources)
+BUILT_SOURCES += $(libusbemu_dbus_built_csources)
+usbemu_libusbemu_la_SOURCES += $(libusbemu_dbus_built_csources)
 
+# --c-generate-object-manager
 define _make_usbemu_dbus_rule
 $(1): $(1:.c=.xml)
 	$$(AM_V_GEN) $(GDBUS_CODEGEN) \
@@ -121,7 +126,7 @@ $(basename $(1)).h: $(1)
 	@true
 endef
 
-$(foreach f,$(filter %.c,$(libusbemu_dbus_csources)),$(eval $(call _make_usbemu_dbus_rule,$(f))))
+$(foreach f,$(filter %.c,$(libusbemu_dbus_built_csources)),$(eval $(call _make_usbemu_dbus_rule,$(f))))
 
 EXTRA_DIST += \
   usbemu/dbus/usbemu-dbus-device.xml \
