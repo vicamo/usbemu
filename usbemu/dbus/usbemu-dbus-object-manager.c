@@ -20,6 +20,7 @@
 #endif
 
 #include "usbemu/usbemu.h"
+#include "usbemu/dbus/usbemu-dbus-device.h"
 #include "usbemu/dbus/usbemu-dbus-manager.h"
 
 #include "usbemu/dbus/usbemu-dbus-object-manager.h"
@@ -81,6 +82,7 @@ usbemu_dbus_object_manager_client_get_proxy_type (GDBusObjectManagerClient *mana
     {
       lookup_hash = g_hash_table_new (g_str_hash, g_str_equal);
       g_hash_table_insert (lookup_hash, (gpointer) USBEMU_DBUS_PREFIX, GSIZE_TO_POINTER (USBEMU_DBUS_TYPE_MANAGER_PROXY));
+      g_hash_table_insert (lookup_hash, (gpointer) USBEMU_DBUS_DEVICE_PREFIX, GSIZE_TO_POINTER (USBEMU_DBUS_TYPE_DEVICE_PROXY));
       g_once_init_leave (&once_init_value, 1);
     }
   ret = (GType) GPOINTER_TO_SIZE (g_hash_table_lookup (lookup_hash, interface_name));
