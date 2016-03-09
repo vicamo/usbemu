@@ -31,6 +31,9 @@
 
 #define USBEMU_DBUS_PREFIX "org.usbemu.UsbemuManager"
 
+/* Prefix for interfaces */
+#define USBEMU_DBUS_DEVICE_PREFIX USBEMU_DBUS_PREFIX ".Device"
+
 /* Prefix for DBus errors */
 #define USBEMU_DBUS_ERROR_PREFIX USBEMU_DBUS_PREFIX ".Error"
 
