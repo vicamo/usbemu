@@ -10,9 +10,9 @@ m4_define([usbemu_api_version], [0.0])
 
 AC_PREREQ([2.62])
 AC_INIT([usbemu], [usbemu_version],
-        [https://github.com/vicamo/usbemu/issues],
+        [https://github.com/usbemu/usbemu/issues],
         [usbemu],
-        [https://github.com/vicamo/usbemu])
+        [https://github.com/usbemu/usbemu])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
