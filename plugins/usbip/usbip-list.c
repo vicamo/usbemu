@@ -16,8 +16,10 @@
 #include "config.h"
 #endif
 
+#include <errno.h>
 #include <stdlib.h>
 
+#include <libudev.h>
 #include <glib.h>
 #include <gio/gio.h>
 
@@ -106,8 +108,57 @@ do_list_remote ()
 static void
 do_list_local ()
 {
-  g_printerr ("Not implemented yet.\n");
-  exit (1);
+  struct udev *udev;
+  struct udev_enumerate *enumerate;
+  struct udev_list_entry *devices, *dev_list_entry;
+  struct udev_device *dev;
+  const gchar *path;
+  const gchar *idVendor;
+  const gchar *idProduct;
+  const gchar *bConfValue;
+  const gchar *bNumIntfs;
+  const gchar *busid;
+
+  /* Create libudev context. */
+  udev = udev_new ();
+
+  /* Create libudev device enumeration. */
+  enumerate = udev_enumerate_new (udev);
+
+  /* Take only USB devices that are not hubs and do not have
+    * the bInterfaceNumber attribute, i.e. are not interfaces.
+    */
+  udev_enumerate_add_match_subsystem (enumerate, "usb");
+  udev_enumerate_add_nomatch_sysattr (enumerate, "bDeviceClass", "09");
+  udev_enumerate_add_nomatch_sysattr (enumerate, "bInterfaceNumber", NULL);
+  udev_enumerate_scan_devices (enumerate);
+
+  devices = udev_enumerate_get_list_entry (enumerate);
+
+  /* Show information about each device. */
+  udev_list_entry_foreach (dev_list_entry, devices) {
+    path = udev_list_entry_get_name (dev_list_entry);
+    dev = udev_device_new_from_syspath (udev, path);
+
+    /* Get device information. */
+    idVendor = udev_device_get_sysattr_value (dev, "idVendor");
+    idProduct = udev_device_get_sysattr_value (dev, "idProduct");
+    bConfValue = udev_device_get_sysattr_value (dev, "bConfigurationValue");
+    bNumIntfs = udev_device_get_sysattr_value (dev, "bNumInterfaces");
+    busid = udev_device_get_sysname (dev);
+    if (!idVendor || !idProduct || !bConfValue || !bNumIntfs) {
+      g_printerr ("problem getting device attributes: %s\n",
+                  g_strerror (errno));
+      break;
+    }
+
+    g_print (" - busid %s (%.4s:%.4s)\n\n", busid, idVendor, idProduct);
+
+    udev_device_unref (dev);
+  }
+
+  udev_enumerate_unref (enumerate);
+  udev_unref (udev);
 }
 
 void
