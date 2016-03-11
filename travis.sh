@@ -6,7 +6,8 @@ apt-get -qq update
 apt-get install --no-install-recommends -y \
 	build-essential \
 	gtk-doc-tools \
-	libglib2.0-dev
+	libglib2.0-dev \
+	libudev-dev
 
 gcc --version
 
