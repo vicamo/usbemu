@@ -3,13 +3,17 @@ sudo: required
 language: c
 
 services:
-  - docker
+- docker
 
 env:
-  - CI_DOCKER_IMAGE=buildpack-deps:sid
+- CI_DOCKER_IMAGE=buildpack-deps:sid
 
 before_install:
-  - docker pull $CI_DOCKER_IMAGE
+- docker pull $CI_DOCKER_IMAGE
 
 script:
-  - docker run -t --rm -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR -w $TRAVIS_BUILD_DIR $CI_DOCKER_IMAGE ./travis.sh
+- docker run -t --rm -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR -w $TRAVIS_BUILD_DIR $CI_DOCKER_IMAGE ./travis.sh
+
+notifications:
+  slack:
+    secure: Ai0cehpSN+rRi0hstVxXDKW5BwYMvxbhnd1Dd0tgS7iC+rsaU+BzGr4nLj+3SYFzFVJM4OjL86VBwN+PAfdv4wX+SKuxvePwAOEDurmXxK8Pl1DgKaOUC7SeD5efpJ9nWMG9HS7i8M7pDclGrbQow6opMQDSWSfmyoowwF4wTRS5Iil/tiTuYVLiIsvEJx7wTydINGYDOI6yyPlidHSll6iyl5RwCAwFmJkmkJ/nebpAb+DuFROXs9WHCKQ8CXXnSEh6ac3t/RN9wWVp/oMAjeeGGZLImmVFfltNV/aH1OW5TGDa6mNui4Sj6+e0gWk6STQi/TpDdgdUALP1ze8LM0iOhTkZBNOnQJPAtiEO1YNDk0LTXMXzTWacc67n79EwY6FTe5bY216hXl1Xl5iWTBUz3WRkQLngXEuBXD7hRQalqWFbB1q0ZLIZuEy9ont7/Aj09TeQS9dkc6kJP5QgisjJISzn/t2R+DVXSws5E9BMEDNdi6JsU/oYyX2JzOSxk5ZMQCOBHUjX0p/IQWsDOGExEKNzIipnHJnF2UoUf0CmHodFciCv8EzCSX2Fh+akYA4kK8N8yzwr8x1T3psE/lxyxJ27WCAc14eoT4VBSukXVkOcfd377mG4fhcehESWavF1HWZn1tHBGtDF7b+VEgQSyPU/o60WynKsWviYHbI=
