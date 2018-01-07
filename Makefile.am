@@ -158,20 +158,20 @@ src_usbemud_LDADD = \
   usbemu/libusbemu.la
 
 ###############################
-## plugins/usbip
+## src/usbip
 
 bin_PROGRAMS += \
-  plugins/usbip/usbip
+  src/usbip/usbip
 
-plugins_usbip_usbip_SOURCES = \
-  plugins/usbip/usbip.c \
-  plugins/usbip/usbip.h \
-  plugins/usbip/usbip-dbus.c \
-  plugins/usbip/usbip-list.c
-plugins_usbip_usbip_CFLAGS = \
+src_usbip_usbip_SOURCES = \
+  src/usbip/usbip.c \
+  src/usbip/usbip.h \
+  src/usbip/usbip-dbus.c \
+  src/usbip/usbip-list.c
+src_usbip_usbip_CFLAGS = \
   $(BASE_DEPS_CFLAGS) \
   $(UDEV_CFLAGS)
-plugins_usbip_usbip_LDADD = \
+src_usbip_usbip_LDADD = \
   $(BASE_DEPS_LIBS) \
   $(UDEV_LIBS) \
   usbemu/libusbemu.la
