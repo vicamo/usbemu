@@ -18,6 +18,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <glib.h>
 #include <gio/gio.h>
@@ -90,14 +91,20 @@ parse_arg (int   *argc,
 
   context = g_option_context_new ("- USB emulation service");
   g_option_context_add_main_entries (context, entries, NULL);
-  g_option_context_parse (context, argc, argv, &error);
-  g_option_context_free (context);
+  g_option_context_set_help_enabled (context, TRUE);
 
-  if (error != NULL) {
-    g_printerr ("option parsing failed: %s\n", error->message);
-    g_error_free (error);
+  if (!g_option_context_parse (context, argc, argv, &error)) {
+    if (error != NULL) {
+      g_printerr ("option parsing failed: %s\n", error->message);
+      g_error_free (error);
+    } else
+      g_printerr ("option parsing failed: unknown error\n");
+
+    g_option_context_free (context);
     exit (1);
   }
+
+  g_option_context_free (context);
 
   if (opt_version) {
     g_print ("%s (%s)\n", g_get_prgname (), USBEMU_VERSION);
