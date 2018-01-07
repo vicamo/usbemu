@@ -138,6 +138,20 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = usbemu.pc
 DISTCLEANFILES += usbemu.pc
 
+###############################
+## usbemu
+
+bin_PROGRAMS += \
+  src/usbemu
+
+src_usbemu_SOURCES = \
+  src/usbemu.c
+src_usbemu_CFLAGS = \
+  $(BASE_DEPS_CFLAGS)
+src_usbemu_LDADD = \
+  $(BASE_DEPS_LIBS) \
+  usbemu/libusbemu.la
+
 GITIGNOREFILES += \
   $(srcdir)/gtk-doc.m4
 
