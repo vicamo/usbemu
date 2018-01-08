@@ -61,6 +61,10 @@
       <xi:include href="xml/usbemu-enums.xml"/>
       <xi:include href="xml/usbemu-errors.xml"/>
     </chapter>
+    <chapter id="devices">
+      <title>Device Classes</title>
+      <xi:include href="xml/usbemu-vhci-device.xml"/>
+    </chapter>
   </part>
 
   <part>

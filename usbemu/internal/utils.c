@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <glib.h>
+#include <glib-object.h>
 
 #include "usbemu/usbemu.h"
 
@@ -78,6 +79,8 @@ _transform_string_to_type (gchar  *str,
 static gpointer
 _ensure_types_inner (gpointer data G_GNUC_UNUSED)
 {
+  g_type_ensure (USBEMU_TYPE_VHCI_DEVICE);
+
   return NULL;
 }
 

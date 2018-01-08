@@ -31,6 +31,8 @@ G_BEGIN_DECLS
  * @USBEMU_ERROR_INVALID_TYPE: invalid object type.
  * @USBEMU_ERROR_SYNTAX_ERROR: syntax error on inputs.
  * @USBEMU_ERROR_NOT_SUPPORTED: operation not supported.
+ * @USBEMU_ERROR_INVALID_STATE: operation occurs in a invalid state.
+ * @USBEMU_ERROR_RESOURCE_UNAVAILABLE: resource unavailable.
  *
  * Errors used in usbemu library.
  */
@@ -39,6 +41,8 @@ typedef enum { /*< underscore_name=usbemu_error >*/
   USBEMU_ERROR_INVALID_TYPE, /*< nick=InvalidType >*/
   USBEMU_ERROR_SYNTAX_ERROR, /*< nick=SyntaxError >*/
   USBEMU_ERROR_NOT_SUPPORTED, /*< nick=NotSupported >*/
+  USBEMU_ERROR_INVALID_STATE, /*< nick=InvalidState >*/
+  USBEMU_ERROR_RESOURCE_UNAVAILABLE, /*< nick=ResourceUnavailable >*/
 } UsbemuError;
 
 /**

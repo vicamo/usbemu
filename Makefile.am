@@ -105,6 +105,20 @@ usbemu_include_HEADERS += \
   usbemu/usbemu-enums.h
 
 ###############################
+## libusbemu - Linux VHCI support
+
+usbemu_libusbemu_la_SOURCES += \
+  usbemu/usbemu-vhci-device.c \
+  usbemu/usbemu-vhci-device.h
+usbemu_libusbemu_la_CFLAGS += \
+  $(GUDEV_CFLAGS)
+usbemu_libusbemu_la_LIBADD = \
+  $(GUDEV_LIBS)
+
+usbemu_include_HEADERS += \
+  usbemu/usbemu-vhci-device.h
+
+###############################
 ## tests
 
 test_ltlibraries = \
