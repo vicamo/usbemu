@@ -108,6 +108,9 @@ usbemu_include_HEADERS += \
 ## libusbemu - Linux VHCI support
 
 usbemu_libusbemu_la_SOURCES += \
+  usbemu/internal/usbip.h \
+  usbemu/internal/vhci.c \
+  usbemu/internal/vhci.h \
   usbemu/usbemu-vhci-device.c \
   usbemu/usbemu-vhci-device.h
 usbemu_libusbemu_la_CFLAGS += \

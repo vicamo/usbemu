@@ -19,10 +19,21 @@
 #include "config.h"
 #endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <glib.h>
+#include <gio/gio.h>
 
 #include "usbemu/usbemu-device.h"
+#include "usbemu/usbemu-enums.h"
+#include "usbemu/usbemu-errors.h"
 #include "usbemu/usbemu-vhci-device.h"
+
+#include "usbemu/internal/usbip.h"
+#include "usbemu/internal/utils.h"
+#include "usbemu/internal/vhci.h"
 
 /**
  * SECTION:usbemu-vhci-device
@@ -50,6 +61,18 @@
 typedef struct  _UsbemuVhciDevicePrivate {
   guint32 devid;
   guint port;
+
+  struct {
+    GSocketConnection *connection;
+    struct {
+      GInputStream *stream;
+      GCancellable *cancellable;
+    } in;
+    struct {
+      GOutputStream *stream;
+      GCancellable *cancellable;
+    } out;
+  }; /* server side connection related fields */
 } UsbemuVhciDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuVhciDevice, usbemu_vhci_device,
@@ -74,9 +97,18 @@ static void object_class_set_property (GObject *object, guint prop_id,
                                        const GValue *value, GParamSpec *pspec);
 static void object_class_get_property (GObject *object, guint prop_id,
                                        GValue *value, GParamSpec *pspec);
+/* virtual methods for UsbemuDeviceClass */
+static void device_class_attached (UsbemuDevice *device);
+static void device_class_detached (UsbemuDevice *device);
+static void device_class_attach_async (UsbemuDevice *device,
+                                       GTask *task, gchar **options);
+static void device_class_detach_async (UsbemuDevice *device,
+                                       GTask *task, gchar **options);
 /* init functions */
 static void usbemu_vhci_device_class_init (UsbemuVhciDeviceClass *klass);
 static void usbemu_vhci_device_init (UsbemuVhciDevice *vhci_device);
+/* internal callbacks */
+static void _setup_connections_for_attach (GTask *task);
 
 static void
 object_class_set_property (GObject      *object,
@@ -121,15 +153,138 @@ object_class_get_property (GObject    *object,
   }
 }
 
+static gboolean
+_extract_attach_options_from_strv (gchar        **strv,
+                                   guint         *port,
+                                   UsbemuSpeeds  *speed)
+{
+  static const UsbemuSpeeds available_speeds[] = {
+    USBEMU_SPEED_HIGH,
+    USBEMU_SPEED_SUPER,
+  };
+  const gchar *str, *speed_str;
+  gsize i;
+
+  if (strv == NULL)
+    return TRUE;
+
+  while ((str = *strv++) != NULL) {
+    if (g_ascii_strncasecmp (str, USBEMU_VHCI_DEVICE_PROP_PORT "=",
+                             strlen (USBEMU_VHCI_DEVICE_PROP_PORT "=")) == 0) {
+      *port = strtoul (strchr (str, '=') + 1, NULL, 0);
+      continue;
+    }
+
+    if (g_ascii_strncasecmp (str, "speed=", 6) == 0) {
+      str += 6;
+      for (i = 0; i < G_N_ELEMENTS (available_speeds); i++) {
+        speed_str = usbemu_speeds_get_string (available_speeds[i]);
+        if (g_ascii_strcasecmp (str, speed_str) == 0) {
+          *speed = available_speeds[i];
+          break;
+        }
+      }
+
+      if (i < G_N_ELEMENTS (available_speeds))
+        continue;
+
+      /* fallback for errors */
+    }
+
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+typedef struct _AttachData {
+  guint port;
+  UsbemuSpeeds speed;
+
+#define ATTACH_DATA_SERVER_CONNECTION 0
+#define ATTACH_DATA_CLIENT_CONNECTION 1
+  GSocketConnection *connections[2];
+} AttachData;
+
+static void
+_attach_data_free (AttachData *attach_data)
+{
+  if (attach_data->connections[ATTACH_DATA_SERVER_CONNECTION] != NULL)
+    g_object_unref (attach_data->connections[ATTACH_DATA_SERVER_CONNECTION]);
+  if (attach_data->connections[ATTACH_DATA_CLIENT_CONNECTION] != NULL)
+    g_object_unref (attach_data->connections[ATTACH_DATA_CLIENT_CONNECTION]);
+
+  g_slice_free(AttachData, attach_data);
+}
+
+static void
+device_class_attach_async (UsbemuDevice  *device,
+                           GTask         *task,
+                           gchar        **options)
+{
+  guint port = USBEMU_VHCI_DEVICE_PORT_UNSPECIFIED;
+  UsbemuSpeeds speed = USBEMU_SPEED_HIGH;
+  gchar port_str[16];
+  AttachData *attach_data;
+
+  if (!_extract_attach_options_from_strv (options, &port, &speed)) {
+    g_task_return_new_error (task, USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                             "failed to parse attach options");
+    return;
+  }
+
+  if (port == USBEMU_VHCI_DEVICE_PORT_UNSPECIFIED)
+    snprintf (port_str, sizeof (port_str), "unspecified");
+  else
+    snprintf (port_str, sizeof (port_str), "%u", port);
+  g_debug (LOG_COMPONENT "prepare to attach VHCI device 0x%08x to port %s, speed %s",
+           usbemu_vhci_device_get_devid ((UsbemuVhciDevice*) device),
+           port_str,
+           usbemu_speeds_get_string (speed));
+
+  attach_data = g_slice_new0 (AttachData);
+  attach_data->port = port;
+  attach_data->speed = speed;
+  g_task_set_task_data (task, attach_data, (GDestroyNotify) _attach_data_free);
+
+  _setup_connections_for_attach (task);
+}
+
+static void
+device_class_detach_async (UsbemuDevice  *device,
+                           GTask         *task,
+                           gchar        **options)
+{
+  guint port;
+  GError *error = NULL;
+
+  if (!usbemu_device_get_attached (device)) {
+    g_task_return_new_error (task, USBEMU_ERROR, USBEMU_ERROR_INVALID_STATE,
+                             "device is not currently attached");
+    return;
+  }
+
+  port = usbemu_vhci_device_get_port (USBEMU_VHCI_DEVICE (device));
+  /* kernel should close the socket, and we'll handle disconnection there. */
+  if (!usbemu_vhci_device_detach_port (port, &error))
+    g_task_return_error (task, error);
+  else
+    g_task_return_boolean (task, TRUE);
+}
+
 static void
 usbemu_vhci_device_class_init (UsbemuVhciDeviceClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
+  UsbemuDeviceClass *device_class = USBEMU_DEVICE_CLASS (klass);
 
   /* virtual methods */
 
   object_class->set_property = object_class_set_property;
   object_class->get_property = object_class_get_property;
+
+  device_class->attach_async = device_class_attach_async;
+  device_class->detach_async = device_class_detach_async;
 
   /* properties */
 
@@ -237,4 +392,224 @@ _usbemu_vhci_device_set_port (UsbemuVhciDevice *vhci_device,
 {
   USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device)->port = port;
   g_object_notify_by_pspec (G_OBJECT (vhci_device), props[PROP_PORT]);
+}
+
+static gchar*
+_socket_connection_local_address_to_string (GSocketConnection *connection)
+{
+  GSocketAddress *addr;
+  gchar *str = NULL;
+
+  addr = g_socket_connection_get_local_address (connection, NULL);
+  if (addr != NULL) {
+    str = g_socket_connectable_to_string (G_SOCKET_CONNECTABLE (addr));
+    g_object_unref (addr);
+  }
+
+  return str;
+}
+
+static void
+_dump_server_client_addr (GSocketConnection *server_conn,
+                          GSocketConnection *client_conn)
+{
+  gchar *server_addr, *client_addr;
+
+  server_addr = _socket_connection_local_address_to_string (server_conn);
+  client_addr = _socket_connection_local_address_to_string (client_conn);
+  g_info (LOG_COMPONENT "server: %s, client: %s", server_addr, client_addr);
+
+  if (server_addr != NULL)
+    g_free (server_addr);
+  if (client_addr != NULL)
+    g_free (client_addr);
+}
+
+static void
+_on_connections_ready (GTask             *task,
+                       guint              port,
+                       UsbemuSpeeds       speed,
+                       GSocketConnection *server_conn,
+                       GSocketConnection *client_conn)
+{
+  UsbemuVhciDevice *vhci_device;
+  UsbemuVhciDevicePrivate *priv;
+  enum usb_device_speed kernel_speed;
+  gint fd;
+  gboolean success = TRUE;
+  GError *error = NULL;
+
+  _dump_server_client_addr (server_conn, client_conn);
+
+  vhci_device = USBEMU_VHCI_DEVICE (g_task_get_source_object (task));
+  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+  if (usbemu_device_get_attached ((UsbemuDevice*) vhci_device)) {
+    success = FALSE;
+    error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_INVALID_STATE,
+                         "device is alreaddy attached at port %u",
+                         usbemu_vhci_device_get_port (vhci_device));
+  } else {
+    fd = g_socket_get_fd (g_socket_connection_get_socket (client_conn));
+    kernel_speed =
+          (speed == USBEMU_SPEED_SUPER) ? USB_SPEED_SUPER : USB_SPEED_HIGH;
+    success = _vhci_attach_device (&port, fd, priv->devid, kernel_speed, &error);
+  }
+
+  if (!success) {
+    /* Will be freed in #_attach_data_free(). Just close here. */
+    g_io_stream_close (G_IO_STREAM (server_conn), NULL, NULL);
+    g_io_stream_close (G_IO_STREAM (client_conn), NULL, NULL);
+
+    g_task_return_error (task, error);
+    return;
+  }
+
+  /* Still close client connection for it's now managed by kernel. */
+  g_io_stream_close (G_IO_STREAM (client_conn), NULL, NULL);
+
+  priv->connection = g_object_ref (server_conn);
+  priv->in.stream = g_buffered_input_stream_new (
+        g_io_stream_get_input_stream (G_IO_STREAM (server_conn)));
+  priv->in.cancellable = g_cancellable_new ();
+  priv->out.stream = g_buffered_output_stream_new (
+        g_io_stream_get_output_stream (G_IO_STREAM (server_conn)));
+  priv->out.cancellable = g_cancellable_new ();
+
+  _usbemu_vhci_device_set_port (vhci_device, port);
+  _usbemu_device_set_attached ((UsbemuDevice*) vhci_device, TRUE, speed);
+
+  g_message (LOG_COMPONENT "attached VHCI device 0x%08x to port %u speed %s",
+             usbemu_vhci_device_get_devid (vhci_device), port,
+             usbemu_speeds_get_string (speed));
+
+  g_task_return_boolean (task, TRUE);
+}
+
+static void
+_on_new_connection (GTask             *task,
+                    GError            *error,
+                    GSocketConnection *connection,
+                    gint               index)
+{
+  AttachData *attach_data;
+
+  if (connection == NULL) {
+    if (!g_task_had_error (task))
+      g_task_return_error (task, error);
+    else
+      g_error_free (error);
+
+    g_object_unref (task);
+    return;
+  }
+
+  if (g_task_had_error (task)) {
+    g_object_unref (connection);
+    g_object_unref (task);
+    return;
+  }
+
+  attach_data = g_task_get_task_data (task);
+  attach_data->connections[index] = connection;
+  if (attach_data->connections[1 - index] != NULL) {
+    /* both sides are completed. */
+    _on_connections_ready (task, attach_data->port, attach_data->speed,
+                           attach_data->connections[ATTACH_DATA_SERVER_CONNECTION],
+                           attach_data->connections[ATTACH_DATA_CLIENT_CONNECTION]);
+  }
+
+  g_object_unref (task);
+}
+
+static void
+_on_client_connect_callback (GSocketClient *client,
+                             GAsyncResult  *result,
+                             GTask         *task)
+{
+  GSocketConnection *client_conn;
+  GError *error = NULL;
+
+  client_conn = g_socket_client_connect_finish (client, result, &error);
+  g_object_unref (client);
+
+  _on_new_connection (task, error, client_conn, ATTACH_DATA_CLIENT_CONNECTION);
+}
+
+static void
+_on_server_accept_callback (GSocketListener *listener,
+                            GAsyncResult    *result,
+                            GTask           *task)
+{
+  GSocketConnection *server_conn;
+  GError *error = NULL;
+
+  server_conn = g_socket_listener_accept_finish (listener, result,
+                                                 NULL, &error);
+  g_socket_listener_close (listener);
+  g_object_unref (listener);
+
+  _on_new_connection (task, error, server_conn, ATTACH_DATA_SERVER_CONNECTION);
+}
+
+static void
+_setup_connections_for_attach (GTask *task)
+{
+  GInetAddress *loopback_addr;
+  GSocketAddress *loopback_sock_addr;
+  GSocketAddress *effective_sock_addr = NULL;
+  GSocketListener *listener;
+  GSocketClient *client;
+  GError *error = NULL;
+  gboolean ret;
+
+  loopback_addr = g_inet_address_new_loopback (G_SOCKET_FAMILY_IPV4);
+  loopback_sock_addr = g_inet_socket_address_new (loopback_addr, 0);
+  g_object_unref (loopback_addr);
+
+  listener = g_socket_listener_new ();
+  ret = g_socket_listener_add_address (listener,
+                                       loopback_sock_addr,
+                                       G_SOCKET_TYPE_STREAM,
+                                       G_SOCKET_PROTOCOL_TCP,
+                                       NULL, &effective_sock_addr,
+                                       &error);
+  g_object_unref (loopback_sock_addr);
+  if (!ret) {
+    g_socket_listener_close (listener);
+    g_object_unref (listener);
+
+    g_task_return_error (task, error);
+    g_object_unref (task);
+    return;
+  }
+
+  g_socket_listener_accept_async (listener,
+                                  g_task_get_cancellable (task),
+                                  (GAsyncReadyCallback) _on_server_accept_callback,
+                                  g_object_ref (task));
+
+  client = g_socket_client_new ();
+  g_socket_client_connect_async (client,
+                                 G_SOCKET_CONNECTABLE (effective_sock_addr),
+                                 g_task_get_cancellable (task),
+                                 (GAsyncReadyCallback) _on_client_connect_callback,
+                                 g_object_ref (task));
+
+  g_object_unref (effective_sock_addr);
+}
+
+/**
+ * usbemu_vhci_device_detach_port:
+ * @port: an attached VHCI port to deattach.
+ * @error: (out): #GError for error reporting, or %NULL to ignore.
+ *
+ * Detach a currently unmanaged, connected VHCI port.
+ *
+ * Returns: the deattach result. #FALSE on error.
+ */
+gboolean
+usbemu_vhci_device_detach_port (guint    port,
+                                GError **error)
+{
+  return _vhci_detach_device (port, error);
 }

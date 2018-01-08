@@ -19,9 +19,13 @@
 #include "config.h"
 #endif
 
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include <gio/gio.h>
 #include <glib.h>
 #include <glib-object.h>
 
@@ -36,6 +40,8 @@
  *
  * Internal used functions. Mainly protected member functions.
  */
+
+#define LOG_COMPONENT "UTILS: "
 
 static gboolean
 _transform_string_to_type (gchar  *str,
@@ -244,4 +250,32 @@ _usbemu_object_new_from_argv (gchar       ***argv,
   g_array_free (values, TRUE);
 
   return object;
+}
+
+G_GNUC_INTERNAL gboolean
+_usbemu_utils_write_sysfs_path (const gchar  *path,
+                                const void   *data,
+                                gsize         count,
+                                GError      **error)
+{
+  gint fd;
+  gssize written;
+
+  g_debug (LOG_COMPONENT "writing '%s' with: %s", path, data);
+
+  fd = open (path, O_WRONLY);
+  if (fd < 0) {
+    g_set_error (error, G_IO_ERROR, g_io_error_from_errno (errno),
+                 "failed to open file for write");
+    return FALSE;
+  }
+
+  written = write (fd, data, count);
+  if (written < 0) {
+    g_set_error (error, G_IO_ERROR, g_io_error_from_errno (errno),
+                 "failed to write data");
+  }
+
+  close (fd);
+  return written == count;
 }

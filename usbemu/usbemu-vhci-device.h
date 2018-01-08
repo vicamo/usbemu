@@ -73,4 +73,7 @@ void    usbemu_vhci_device_set_devid (UsbemuVhciDevice *vhci_device,
                                       guint32           devid);
 guint   usbemu_vhci_device_get_port  (UsbemuVhciDevice *vhci_device);
 
+gboolean usbemu_vhci_device_detach_port (guint    port,
+                                         GError **error);
+
 G_END_DECLS

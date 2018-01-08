@@ -59,4 +59,9 @@ GObject* _usbemu_object_new_from_argv (gchar       ***argv,
                                        const gchar   *type_key,
                                        GError       **error);
 
+gboolean _usbemu_utils_write_sysfs_path (const gchar  *path,
+					 const void   *data,
+					 gsize         count,
+					 GError      **error);
+
 G_END_DECLS

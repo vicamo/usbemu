@@ -147,6 +147,10 @@ device_attach_callback (UsbemuDevice *device,
     return;
   }
 
+  g_print ("Device %04x:%04x attached.\n",
+           usbemu_device_get_vendor_id (device),
+           usbemu_device_get_product_id (device));
+
   /* TODO: */
   g_idle_add ((GSourceFunc) g_main_loop_quit, main_loop);
 }
