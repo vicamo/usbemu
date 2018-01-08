@@ -71,8 +71,8 @@ libusbemu_enum_cheaders = \
 
 $(libusbemu_enum_csources): Makefile.am $(libusbemu_enum_cheaders) $(libusbemu_enum_csources:=.template)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
-	  --template $@.template \
-	  $(libusbemu_enum_cheaders) > $@
+	  --template $(addprefix $(srcdir)/,$@.template) \
+	  $(addprefix $(srcdir)/,$(libusbemu_enum_cheaders)) > $@
 
 BUILT_SOURCES += $(libusbemu_enum_csources)
 usbemu_libusbemu_la_SOURCES += $(libusbemu_enum_csources)
@@ -88,8 +88,8 @@ libusbemu_error_csources = \
 
 $(libusbemu_error_csources): Makefile.am usbemu/usbemu-errors.h $(libusbemu_error_csources:=.template)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
-	  --template $@.template \
-	  usbemu/usbemu-errors.h > $@
+	  --template $(addprefix $(srcdir)/,$@.template) \
+	  $(addprefix $(srcdir)/,usbemu/usbemu-errors.h) > $@
 
 BUILT_SOURCES += $(libusbemu_error_csources)
 usbemu_libusbemu_la_SOURCES += $(libusbemu_error_csources)

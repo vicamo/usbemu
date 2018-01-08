@@ -25,7 +25,7 @@
 /*** END file-header ***/
 
 /*** BEGIN file-production ***/
-#include "@filename@"
+#include "usbemu/@basename@"
 /*** END file-production ***/
 
 /*** BEGIN value-header ***/

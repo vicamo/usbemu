@@ -27,7 +27,7 @@
 /*** END file-header ***/
 
 /*** BEGIN file-production ***/
-#include <@filename@>
+#include <usbemu/@basename@>
 
 G_BEGIN_DECLS
 
