@@ -62,40 +62,45 @@ usbemu_libusbemu_la_LDFLAGS = \
 ###############################
 ## libusbemu - enums
 
-libusbemu_enum_csources = \
+libusbemu_enum_built_sources = \
   usbemu/usbemu-enums.c \
   usbemu/usbemu-enums.h
 
-libusbemu_enum_cheaders = \
+libusbemu_enum_check_headers = \
   usbemu/usbemu-errors.h
 
-$(libusbemu_enum_csources): Makefile.am $(libusbemu_enum_cheaders) $(libusbemu_enum_csources:=.template)
+$(libusbemu_enum_built_sources): Makefile.am $(libusbemu_enum_check_headers) \
+  $(libusbemu_enum_built_sources:=.template)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
 	  --template $(addprefix $(srcdir)/,$@.template) \
-	  $(addprefix $(srcdir)/,$(libusbemu_enum_cheaders)) > $@
+	  $(addprefix $(srcdir)/,$(libusbemu_enum_check_headers)) > $@
 
-BUILT_SOURCES += $(libusbemu_enum_csources)
-usbemu_libusbemu_la_SOURCES += $(libusbemu_enum_csources)
+BUILT_SOURCES += $(libusbemu_enum_built_sources)
+usbemu_libusbemu_la_SOURCES += $(libusbemu_enum_built_sources)
 
 EXTRA_DIST += \
-   $(libusbemu_enum_csources:=.template)
+  $(libusbemu_enum_built_sources:=.template)
 
 ###############################
 ## libusbemu - errors
 
-libusbemu_error_csources = \
+libusbemu_error_built_sources = \
   usbemu/usbemu-errors.c
 
-$(libusbemu_error_csources): Makefile.am usbemu/usbemu-errors.h $(libusbemu_error_csources:=.template)
+libusbemu_error_check_headers = \
+  usbemu/usbemu-errors.h
+
+$(libusbemu_error_built_sources): Makefile.am $(libusbemu_error_check_headers) \
+  $(libusbemu_error_built_sources:=.template)
 	$(AM_V_GEN) $(GLIB_MKENUMS) \
 	  --template $(addprefix $(srcdir)/,$@.template) \
-	  $(addprefix $(srcdir)/,usbemu/usbemu-errors.h) > $@
+	  $(addprefix $(srcdir)/,$(libusbemu_error_check_headers)) > $@
 
-BUILT_SOURCES += $(libusbemu_error_csources)
-usbemu_libusbemu_la_SOURCES += $(libusbemu_error_csources)
+BUILT_SOURCES += $(libusbemu_error_built_sources)
+usbemu_libusbemu_la_SOURCES += $(libusbemu_error_built_sources)
 
 EXTRA_DIST += \
-   $(libusbemu_error_csources:=.template)
+  $(libusbemu_error_built_sources:=.template)
 
 ###############################
 ## libusbemu - dbus
