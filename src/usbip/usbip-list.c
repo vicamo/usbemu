@@ -19,9 +19,9 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include <libudev.h>
 #include <glib.h>
 #include <gio/gio.h>
+#include <gudev/gudev.h>
 
 #include "usbemu/usbemu.h"
 #include "usbemu/dbus/usbemu-dbus-device.h"
@@ -108,57 +108,51 @@ do_list_remote ()
 static void
 do_list_local ()
 {
-  struct udev *udev;
-  struct udev_enumerate *enumerate;
-  struct udev_list_entry *devices, *dev_list_entry;
-  struct udev_device *dev;
-  const gchar *path;
+  GUdevClient *client;
+  GUdevEnumerator *enumerator;
+  GList *list, *entry;
+  GUdevDevice *dev;
   const gchar *idVendor;
   const gchar *idProduct;
   const gchar *bConfValue;
   const gchar *bNumIntfs;
   const gchar *busid;
 
-  /* Create libudev context. */
-  udev = udev_new ();
+  /* Create gudev client context. */
+  client = g_udev_client_new (NULL);
 
-  /* Create libudev device enumeration. */
-  enumerate = udev_enumerate_new (udev);
+  /* Create device enumerator. */
+  enumerator = g_udev_enumerator_new (client);
 
   /* Take only USB devices that are not hubs and do not have
     * the bInterfaceNumber attribute, i.e. are not interfaces.
     */
-  udev_enumerate_add_match_subsystem (enumerate, "usb");
-  udev_enumerate_add_nomatch_sysattr (enumerate, "bDeviceClass", "09");
-  udev_enumerate_add_nomatch_sysattr (enumerate, "bInterfaceNumber", NULL);
-  udev_enumerate_scan_devices (enumerate);
-
-  devices = udev_enumerate_get_list_entry (enumerate);
+  g_udev_enumerator_add_match_subsystem (enumerator, "usb");
+  g_udev_enumerator_add_nomatch_sysfs_attr (enumerator, "bDeviceClass", "09");
+  g_udev_enumerator_add_nomatch_sysfs_attr (enumerator, "bInterfaceNumber", "*");
+  list = g_udev_enumerator_execute (enumerator);
 
   /* Show information about each device. */
-  udev_list_entry_foreach (dev_list_entry, devices) {
-    path = udev_list_entry_get_name (dev_list_entry);
-    dev = udev_device_new_from_syspath (udev, path);
+  for (entry = list; entry != NULL; entry = g_list_next (entry)) {
+    dev = (GUdevDevice *) entry->data;
 
     /* Get device information. */
-    idVendor = udev_device_get_sysattr_value (dev, "idVendor");
-    idProduct = udev_device_get_sysattr_value (dev, "idProduct");
-    bConfValue = udev_device_get_sysattr_value (dev, "bConfigurationValue");
-    bNumIntfs = udev_device_get_sysattr_value (dev, "bNumInterfaces");
-    busid = udev_device_get_sysname (dev);
-    if (!idVendor || !idProduct || !bConfValue || !bNumIntfs) {
-      g_printerr ("problem getting device attributes: %s\n",
-                  g_strerror (errno));
-      break;
-    }
+    idVendor = g_udev_device_get_sysfs_attr (dev, "idVendor");
+    idProduct = g_udev_device_get_sysfs_attr (dev, "idProduct");
+    bConfValue = g_udev_device_get_sysfs_attr (dev, "bConfigurationValue");
+    bNumIntfs = g_udev_device_get_sysfs_attr (dev, "bNumInterfaces");
+    busid = g_udev_device_get_name (dev);
 
     g_print (" - busid %s (%.4s:%.4s)\n\n", busid, idVendor, idProduct);
 
-    udev_device_unref (dev);
+    g_object_unref (dev);
   }
 
-  udev_enumerate_unref (enumerate);
-  udev_unref (udev);
+  if (list != NULL)
+    g_list_free (list);
+
+  g_object_unref (enumerator);
+  g_object_unref (client);
 }
 
 void

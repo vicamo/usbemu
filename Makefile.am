@@ -194,10 +194,10 @@ src_usbip_usbip_SOURCES = \
   src/usbip/usbip-list.c
 src_usbip_usbip_CFLAGS = \
   $(BASE_DEPS_CFLAGS) \
-  $(UDEV_CFLAGS)
+  $(GUDEV_CFLAGS)
 src_usbip_usbip_LDADD = \
   $(BASE_DEPS_LIBS) \
-  $(UDEV_LIBS) \
+  $(GUDEV_LIBS) \
   usbemu/libusbemu.la
 
 GITIGNOREFILES += \
