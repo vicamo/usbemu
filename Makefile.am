@@ -2,6 +2,11 @@ ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
 SUBDIRS = . docs/reference
 
+usbemu_includedir = $(includedir)/usbemu-$(USBEMU_API_VERSION)/usbemu
+usbemu_dbus_includedir = $(usbemu_includedir)/dbus
+
+usbemu_include_HEADERS =
+usbemu_dbus_include_HEADERS =
 bin_PROGRAMS =
 lib_LTLIBRARIES =
 
@@ -59,6 +64,10 @@ usbemu_libusbemu_la_LIBADD = \
 usbemu_libusbemu_la_LDFLAGS = \
   -version-info $(LT_VERSION_INFO)
 
+usbemu_include_HEADERS += \
+  usbemu/usbemu.h \
+  usbemu/usbemu-device.h
+
 ###############################
 ## libusbemu - enums
 
@@ -81,6 +90,9 @@ usbemu_libusbemu_la_SOURCES += $(libusbemu_enum_built_sources)
 EXTRA_DIST += \
   $(libusbemu_enum_built_sources:=.template)
 
+usbemu_include_HEADERS += \
+  usbemu/usbemu-enums.h
+
 ###############################
 ## libusbemu - errors
 
@@ -101,6 +113,9 @@ usbemu_libusbemu_la_SOURCES += $(libusbemu_error_built_sources)
 
 EXTRA_DIST += \
   $(libusbemu_error_built_sources:=.template)
+
+usbemu_include_HEADERS += \
+  usbemu/usbemu-errors.h
 
 ###############################
 ## libusbemu - dbus
@@ -136,6 +151,10 @@ $(foreach f,$(filter %.c,$(libusbemu_dbus_built_csources)),$(eval $(call _make_u
 EXTRA_DIST += \
   usbemu/dbus/usbemu-dbus-device.xml \
   usbemu/dbus/usbemu-dbus-manager.xml
+
+usbemu_dbus_include_HEADERS += \
+  usbemu/dbus/usbemu-dbus-object-manager.h \
+  $(filter %.h,$(libusbemu_dbus_built_csources))
 
 ###############################
 ## pkg-config DATA
