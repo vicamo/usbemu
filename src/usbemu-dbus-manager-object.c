@@ -117,8 +117,8 @@ on_handle_add_device (UsbemuDBusManager       *manager_iface,
   device = usbemu_device_new ("dummy");
   if (device == NULL) {
     g_dbus_method_invocation_return_error_literal (invocation,
-                                                   USBEMU_MANAGER_ERROR,
-                                                   USBEMU_MANAGER_ERROR_FAILED,
+                                                   USBEMU_ERROR,
+                                                   USBEMU_ERROR_FAILED,
                                                    "add device failed");
     return TRUE;
   }
@@ -149,8 +149,8 @@ on_handle_remove_device (UsbemuDBusManager       *manager_iface,
 
   if (!remove_device (priv, manager_iface, path)) {
     g_dbus_method_invocation_return_error (invocation,
-                                           USBEMU_MANAGER_ERROR,
-                                           USBEMU_MANAGER_ERROR_DEVICE_UNAVAILABLE,
+                                           USBEMU_ERROR,
+                                           USBEMU_ERROR_DEVICE_UNAVAILABLE,
                                            "device '%s' not found",
                                            path);
   } else {

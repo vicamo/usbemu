@@ -21,7 +21,7 @@
 #error "Only <usbemu/usbemu.h> can be included directly."
 #endif
 
-#include <glib-object.h>
+#include <glib.h>
 
 #define USBEMU_DBUS_PATH "/org/usbemu"
 
@@ -38,17 +38,17 @@
 #define USBEMU_DBUS_ERROR_PREFIX USBEMU_DBUS_PREFIX ".Error"
 
 /**
- * UsbemuManagerError:
- * @USBEMU_MANAGER_ERROR_FAILED: unknown or unclassified failure.
- * @USBEMU_MANAGER_ERROR_DEVICE_UNAVAILABLE: device unavailable.
+ * UsbemuError:
+ * @USBEMU_ERROR_FAILED: unknown or unclassified failure.
+ * @USBEMU_ERROR_DEVICE_UNAVAILABLE: device unavailable.
  *
- * Errors related to the UsbemuManager interface of UsbemuManager DBus service.
+ * Errors used in usbemu library.
  */
-typedef enum { /*< underscore_name=usbemu_manager_error >*/
-  USBEMU_MANAGER_ERROR_FAILED = 0, /*< nick=Failed >*/
-  USBEMU_MANAGER_ERROR_DEVICE_UNAVAILABLE, /*< nick=DeviceUnavailable >*/
-} UsbemuManagerError;
+typedef enum { /*< underscore_name=usbemu_error >*/
+  USBEMU_ERROR_FAILED = 0, /*< nick=Failed >*/
+  USBEMU_ERROR_DEVICE_UNAVAILABLE, /*< nick=DeviceUnavailable >*/
+} UsbemuError;
 
-GQuark usbemu_manager_error_quark (void);
-#define USBEMU_MANAGER_ERROR (usbemu_manager_error_quark ())
-#define USBEMU_MANAGER_ERROR_DBUS_PREFIX USBEMU_DBUS_ERROR_PREFIX ".Manager"
+GQuark usbemu_error_quark (void);
+#define USBEMU_ERROR (usbemu_error_quark ())
+#define USBEMU_ERROR_DBUS_PREFIX USBEMU_DBUS_ERROR_PREFIX
