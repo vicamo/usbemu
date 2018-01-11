@@ -30,8 +30,33 @@ G_BEGIN_DECLS
 G_DECLARE_DERIVABLE_TYPE (UsbemuDevice, usbemu_device, USBEMU, DEVICE,
                           GObject)
 
+/**
+ * USBEMU_DEVICE_PROP_ATTACHED:
+ *
+ * "attached" property name.
+ */
+#define USBEMU_DEVICE_PROP_ATTACHED "attached"
+
+/**
+ * USBEMU_DEVICE_SIGNAL_ATTACHED:
+ *
+ * "attached" signal name.
+ */
+#define USBEMU_DEVICE_SIGNAL_ATTACHED "attached"
+/**
+ * USBEMU_DEVICE_SIGNAL_DETACHED:
+ *
+ * "detached" signal name.
+ */
+#define USBEMU_DEVICE_SIGNAL_DETACHED "detached"
+
 struct _UsbemuDeviceClass {
   GObjectClass parent_class;
+
+  /* signal callbacks */
+
+  void (*attached) (UsbemuDevice *device);
+  void (*detached) (UsbemuDevice *device);
 
   /*< private >*/
 
@@ -40,5 +65,7 @@ struct _UsbemuDeviceClass {
 };
 
 UsbemuDevice* usbemu_device_new ();
+
+gboolean usbemu_device_get_attached (UsbemuDevice *device);
 
 G_END_DECLS

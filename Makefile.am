@@ -53,7 +53,8 @@ usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu.h \
   usbemu/usbemu-device.c \
   usbemu/usbemu-device.h \
-  usbemu/usbemu-errors.h
+  usbemu/usbemu-errors.h \
+  usbemu/usbemu-internal.h
 usbemu_libusbemu_la_CFLAGS = \
   -DLIBUSBEMU_COMPILATION \
   $(BASE_DEPS_CFLAGS)

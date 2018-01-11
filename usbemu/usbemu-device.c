@@ -30,11 +30,14 @@
 /**
  * UsbemuDeviceClass:
  * @parent_class: The parent class.
+ * @attached: attached signal hook.
+ * @detached: detached signal hook.
  *
  * Class structure for UsbemuDevice.
  */
 
 typedef struct  _UsbemuDevicePrivate {
+  gboolean attached;
 } UsbemuDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDevice, usbemu_device, G_TYPE_OBJECT)
@@ -45,10 +48,20 @@ G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDevice, usbemu_device, G_TYPE_OBJECT)
 enum
 {
   PROP_0,
+  PROP_ATTACHED,
   N_PROPERTIES
 };
 
 static GParamSpec *props[N_PROPERTIES] = { NULL, };
+
+enum
+{
+  SIGNAL_ATTACHED,
+  SIGNAL_DETACHED,
+  N_SIGNALS
+};
+
+static guint signals[N_SIGNALS] = { 0 };
 
 /* virtual methods for GObjectClass */
 static void gobject_class_set_property (GObject *object, guint prop_id,
@@ -82,8 +95,12 @@ gobject_class_get_property (GObject    *object,
                             GParamSpec *pspec)
 {
   UsbemuDevice *device = USBEMU_DEVICE (object);
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
 
   switch (prop_id) {
+    case PROP_ATTACHED:
+      g_value_set_boolean (value, priv->attached);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
@@ -106,15 +123,56 @@ usbemu_device_class_init (UsbemuDeviceClass *device_class)
   object_class->get_property = gobject_class_get_property;
   object_class->finalize = gobject_class_finalize;
 
+  /* signals */
+
+  /**
+   * UsbemuDevice::attached
+   * @device: the device that emitted the signal
+   *
+   * Signals that a device has been attached.
+   */
+  signals[SIGNAL_ATTACHED] =
+        g_signal_new (USBEMU_DEVICE_SIGNAL_ATTACHED,
+                      G_TYPE_FROM_CLASS (device_class),
+                      G_SIGNAL_RUN_LAST,
+                      G_STRUCT_OFFSET (UsbemuDeviceClass, attached),
+                      NULL, NULL,
+                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+
+  /**
+   * UsbemuDevice::detached
+   * @device: the device that emitted the signal
+   *
+   * Signals that a device has been detached.
+   */
+  signals[SIGNAL_DETACHED] =
+        g_signal_new (USBEMU_DEVICE_SIGNAL_DETACHED,
+                      G_TYPE_FROM_CLASS (device_class),
+                      G_SIGNAL_RUN_LAST,
+                      G_STRUCT_OFFSET (UsbemuDeviceClass, detached),
+                      NULL, NULL,
+                      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
+
   /* properties */
+
+  /**
+   * UsbemuDevice:attached:
+   */
+  props[PROP_ATTACHED] =
+    g_param_spec_boolean (USBEMU_DEVICE_PROP_ATTACHED,
+                          "Attached", "Attached",
+                          FALSE,
+                          G_PARAM_READABLE);
 
   g_object_class_install_properties (object_class, N_PROPERTIES, props);
 }
 
 static void
-usbemu_device_init (UsbemuDevice *device G_GNUC_UNUSED)
+usbemu_device_init (UsbemuDevice *device)
 {
-  /* do nothing */
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+
+  priv->attached = FALSE;
 }
 
 /**
@@ -127,4 +185,35 @@ UsbemuDevice*
 usbemu_device_new ()
 {
   return g_object_new (USBEMU_TYPE_DEVICE, NULL);
+}
+
+/**
+ * usbemu_device_get_attached:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device attached state.
+ *
+ * Returns: Device attached state.
+ */
+gboolean
+usbemu_device_get_attached (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->attached;
+}
+
+void
+_usbemu_device_set_attached (UsbemuDevice *device,
+                             gboolean      attached)
+{
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+
+  if (attached == priv->attached)
+    return;
+
+  priv->attached = attached;
+  g_object_notify_by_pspec ((GObject*) device, props[PROP_ATTACHED]);
+  g_signal_emit (device,
+                 signals[attached ? SIGNAL_ATTACHED : SIGNAL_DETACHED], 0);
 }
