@@ -55,6 +55,18 @@
 
 typedef struct  _UsbemuDevicePrivate {
   gboolean attached;
+
+  guint16 bcdUSB;
+  UsbemuClasses bDeviceClass;
+  guint8 bDeviceSubClass;
+  guint8 bDeviceProtocol;
+  guint8 bMaxPacketSize;
+  guint16 idVendor;
+  guint16 idProduct;
+  guint16 bcdDevice;
+  gchar *manufacturer;
+  gchar *product;
+  gchar *serial;
 } UsbemuDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDevice, usbemu_device, G_TYPE_OBJECT)
@@ -125,8 +137,17 @@ gobject_class_get_property (GObject    *object,
 }
 
 static void
-gobject_class_finalize (GObject *object G_GNUC_UNUSED)
+gobject_class_finalize (GObject *object)
 {
+  UsbemuDevice *device = USBEMU_DEVICE (object);
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+
+  if (priv->manufacturer != NULL)
+    g_free (priv->manufacturer);
+  if (priv->product != NULL)
+    g_free (priv->product);
+  if (priv->serial != NULL)
+    g_free (priv->serial);
 }
 
 static void
@@ -190,6 +211,17 @@ usbemu_device_init (UsbemuDevice *device)
   UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
 
   priv->attached = FALSE;
+  priv->bcdUSB = 0x100;
+  priv->bDeviceClass = USBEMU_CLASS_USE_INTERFACE_DESCRIPTOR;
+  priv->bDeviceSubClass = USBEMU_SUB_CLASS_USE_INTERFACE_DESCRIPTOR;
+  priv->bDeviceProtocol = USBEMU_PROTOCOL_USE_INTERFACE_DESCRIPTOR;
+  priv->bMaxPacketSize = 0;
+  priv->idVendor = 0xdead;
+  priv->idProduct = 0xbeef;
+  priv->bcdDevice = 0x100;
+  priv->manufacturer = NULL;
+  priv->product = NULL;
+  priv->serial = NULL;
 }
 
 /**
@@ -235,4 +267,407 @@ _usbemu_device_set_attached (UsbemuDevice *device,
   g_object_notify_by_pspec ((GObject*) device, props[PROP_ATTACHED]);
   g_signal_emit (device,
                  signals[attached ? SIGNAL_ATTACHED : SIGNAL_DETACHED], 0);
+}
+
+/**
+ * usbemu_device_get_specification_num:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device specification release number in Binary-Coded Decimal (i.e., 2.10
+ * is 210H). This field identifies the release of the USB Specification with
+ * which the device and its descriptors are compliant.
+ *
+ * Returns: Device specification number.
+ */
+guint16
+usbemu_device_get_specification_num (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->bcdUSB;
+}
+
+/**
+ * usbemu_device_set_specification_num:
+ * @device: (in): a #UsbemuDevice object.
+ * @spec: device specification number.
+ *
+ * Set device specification release number in Binary-Coded Decimal (i.e., 2.10
+ * is 210H).
+ */
+void
+usbemu_device_set_specification_num (UsbemuDevice *device,
+                                     guint16       spec)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->bcdUSB = spec;
+}
+
+/**
+ * usbemu_device_get_class:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device class code (assigned by
+ * [USB-IF](http://www.usb.org/developers/defined_class)).
+ *
+ * If this field is reset to #USBEMU_CLASS_USE_INTERFACE_DESCRIPTOR, each
+ * interface within a configuration specifies its own class information and the
+ * various interfaces operate independently.
+ *
+ * If this field is set to a value between #USBEMU_CLASS_AUDIO and
+ * #USBEMU_CLASS_APPLICATION_SPECIFIC, the device supports different class
+ * specifications on different interfaces and the interfaces may not operate
+ * independently. This value identifies the class definition used for the
+ * aggregate interfaces.
+ *
+ * If this field is set to #USBEMU_CLASS_VENDOR_SPECIFIC, the device class is
+ * vendor-specific.
+ *
+ * Returns: Device class code.
+ */
+UsbemuClasses
+usbemu_device_get_class (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->bDeviceClass;
+}
+
+/**
+ * usbemu_device_set_class:
+ * @device: (in): a #UsbemuDevice object.
+ * @klass: device class code.
+ *
+ * Set device class code.
+ */
+void
+usbemu_device_set_class (UsbemuDevice  *device,
+                         UsbemuClasses  klass)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->bDeviceClass = klass;
+}
+
+/**
+ * usbemu_device_get_sub_class:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device sub-class code (assigned by the
+ * [USB-IF](http://www.usb.org/developers/defined_class)).
+ *
+ * These codes are qualified by the value of the class field. If the class field
+ * is reset to #USBEMU_CLASS_USE_INTERFACE_DESCRIPTOR, this field must also be
+ * reset to #USBEMU_SUB_CLASS_USE_INTERFACE_DESCRIPTOR. If the class field is
+ * not set to #USBEMU_CLASS_VENDOR_SPECIFIC, all values are reserved for
+ * assignment by the USB-IF.
+ *
+ * Returns: Device sub-class code.
+ */
+guint8
+usbemu_device_get_sub_class (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->bDeviceSubClass;
+}
+
+/**
+ * usbemu_device_set_sub_class:
+ * @device: (in): a #UsbemuDevice object.
+ * @sub_class: device sub-class code.
+ *
+ * Set device sub-class code.
+ */
+void
+usbemu_device_set_sub_class (UsbemuDevice *device,
+                             guint8        sub_class)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->bDeviceSubClass = sub_class;
+}
+
+/**
+ * usbemu_device_get_protocol:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device protocol code (assigned by the
+ * [USB-IF](http://www.usb.org/developers/defined_class)).
+ *
+ * These codes are qualified by the value of the class and the sub-class fields.
+ * If a device supports class-specific protocols on a device basis as opposed to
+ * an interface basis, this code identifies the protocols that the device uses
+ * as defined by the specification of the device class.
+ *
+ * If this field is reset to #USBEMU_PROTOCOL_USE_INTERFACE_DESCRIPTOR, the
+ * device does not use class-specific protocols on a device basis. However, it
+ * may use class-specific protocols on an interface basis.
+ *
+ * If this field is set to #USBEMU_PROTOCOL_VENDOR_SPECIFIC, the device uses a
+ * vendor-specific protocol on a device basis.
+ *
+ * Returns: Device protocol code.
+ */
+guint8
+usbemu_device_get_protocol (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->bDeviceProtocol;
+}
+
+/**
+ * usbemu_device_set_protocol:
+ * @device: (in): a #UsbemuDevice object.
+ * @protocol: device protocol code
+ *
+ * Set device protocol code.
+ */
+void
+usbemu_device_set_protocol (UsbemuDevice *device,
+                            guint8        protocol)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->bDeviceProtocol = protocol;
+}
+
+/**
+ * usbemu_device_get_max_packet_size:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get maximum packet size for endpoint zero (only 8, 16, 32, or 64 are valid).
+ *
+ * Returns: maximum packet size for endpoint zero.
+ */
+guint8
+usbemu_device_get_max_packet_size (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->bMaxPacketSize;
+}
+
+/**
+ * usbemu_device_set_max_packet_size:
+ * @device: (in): a #UsbemuDevice object.
+ * @max_packet_size: maximum packet size for endpoint zero (only 8, 16, 32, or
+ *     64 are valid).
+ *
+ * Set maximum packet size for endpoint zero.
+ */
+void
+usbemu_device_set_max_packet_size (UsbemuDevice *device,
+                                   guint8        max_packet_size)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->bMaxPacketSize = max_packet_size;
+}
+
+/**
+ * usbemu_device_get_vendor_id:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device vendor id (assigned by the
+ * [USB-IF](http://www.usb.org/developers/defined_class)).
+ *
+ * Returns: Device vendor id.
+ */
+guint16
+usbemu_device_get_vendor_id (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->idVendor;
+}
+
+/**
+ * usbemu_device_set_vendor_id:
+ * @device: (in): a #UsbemuDevice object.
+ * @vendor_id: device vendor id.
+ *
+ * Set device vendor id.
+ */
+void
+usbemu_device_set_vendor_id (UsbemuDevice *device,
+                             guint16       vendor_id)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->idVendor = vendor_id;
+}
+
+/**
+ * usbemu_device_get_product_id:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device product id (assigned by the manufacturer).
+ *
+ * Returns: Device product id.
+ */
+guint16
+usbemu_device_get_product_id (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->idProduct;
+}
+
+/**
+ * usbemu_device_set_product_id:
+ * @device: (in): a #UsbemuDevice object.
+ * @product_id: device product id.
+ *
+ * Set device product id.
+ */
+void
+usbemu_device_set_product_id (UsbemuDevice *device,
+                              guint16       product_id)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->idProduct = product_id;
+}
+
+/**
+ * usbemu_device_get_release_number:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device release number in binary-coded decimal.
+ *
+ * Returns: Device release number.
+ */
+guint16
+usbemu_device_get_release_number (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->bcdDevice;
+}
+
+/**
+ * usbemu_device_set_release_number:
+ * @device: (in): a #UsbemuDevice object.
+ * @release_number: device release number in binary-coded decimal.
+ *
+ * Set device release number.
+ */
+void
+usbemu_device_set_release_number (UsbemuDevice *device,
+                                  guint16       release_number)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  USBEMU_DEVICE_GET_PRIVATE (device)->bcdDevice = release_number;
+}
+
+/**
+ * usbemu_device_get_manufacturer_name:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device manufacturer's name.
+ *
+ * Returns: (transfer none) Device manufacturer's name. The returned string is
+ *          owned by USBEmu and should not be modified or freed.
+ */
+const gchar*
+usbemu_device_get_manufacturer_name (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), NULL);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->manufacturer;
+}
+
+/**
+ * usbemu_device_set_manufacturer_name:
+ * @device: (in): a #UsbemuDevice object.
+ * @name: (in): a %NULL-terminated name string.
+ *
+ * Set device manufacturer's name.
+ */
+void
+usbemu_device_set_manufacturer_name (UsbemuDevice *device,
+                                     const gchar  *name)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+  if (priv->manufacturer != NULL)
+    g_free (priv->manufacturer);
+  priv->manufacturer = g_strdup (name);
+}
+
+/**
+ * usbemu_device_get_product_name:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device product name.
+ *
+ * Returns: (transfer none) Device product name. The returned string is
+ *          owned by USBEmu and should not be modified or freed.
+ */
+const gchar*
+usbemu_device_get_product_name (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), NULL);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->product;
+}
+
+/**
+ * usbemu_device_set_product_name:
+ * @device: (in): a #UsbemuDevice object.
+ * @name: (in): a %NULL-terminated name string.
+ *
+ * Set device product name.
+ */
+void
+usbemu_device_set_product_name (UsbemuDevice *device,
+                                const gchar  *name)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+  if (priv->product != NULL)
+    g_free (priv->product);
+  priv->product = g_strdup (name);
+}
+
+/**
+ * usbemu_device_get_serial:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get device serial string.
+ *
+ * Returns: (transfer none) Device device serial string. The returned string is
+ *          owned by USBEmu and should not be modified or freed.
+ */
+const gchar*
+usbemu_device_get_serial (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), NULL);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->serial;
+}
+
+/**
+ * usbemu_device_set_serial:
+ * @device: (in): a #UsbemuDevice object.
+ * @serial: (in): a %NULL-terminated device serial string.
+ *
+ * Set device serial string.
+ */
+void
+usbemu_device_set_serial (UsbemuDevice *device,
+                          const gchar  *serial)
+{
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+  if (priv->serial != NULL)
+    g_free (priv->serial);
+  priv->serial = g_strdup (serial);
 }

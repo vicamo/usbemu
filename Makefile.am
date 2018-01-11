@@ -77,6 +77,7 @@ libusbemu_enum_built_sources = \
   usbemu/usbemu-enums.h
 
 libusbemu_enum_check_headers = \
+  usbemu/usbemu-device.h \
   usbemu/usbemu-errors.h
 
 $(libusbemu_enum_built_sources): Makefile.am $(libusbemu_enum_check_headers) \
