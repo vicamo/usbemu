@@ -20,6 +20,8 @@
 #endif
 
 #include "usbemu/usbemu-device.h"
+#include "usbemu/usbemu-configuration.h"
+#include "usbemu/usbemu-internal.h"
 
 /**
  * SECTION:usbemu
@@ -67,6 +69,7 @@ typedef struct  _UsbemuDevicePrivate {
   gchar *manufacturer;
   gchar *product;
   gchar *serial;
+  GSList *configurations;
 } UsbemuDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDevice, usbemu_device, G_TYPE_OBJECT)
@@ -97,6 +100,7 @@ static void gobject_class_set_property (GObject *object, guint prop_id,
                                         const GValue *value, GParamSpec *pspec);
 static void gobject_class_get_property (GObject *object, guint prop_id,
                                         GValue *value, GParamSpec *pspec);
+static void gobject_class_dispose (GObject *object);
 static void gobject_class_finalize (GObject *object);
 /* virtual methods for UsbemuDeviceClass */
 static void usbemu_device_class_init (UsbemuDeviceClass *device_class);
@@ -137,6 +141,18 @@ gobject_class_get_property (GObject    *object,
 }
 
 static void
+gobject_class_dispose (GObject *object)
+{
+  UsbemuDevice *device = USBEMU_DEVICE (object);
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+
+  if (priv->configurations != NULL) {
+    g_slist_free_full (priv->configurations, (GDestroyNotify) g_object_unref);
+    priv->configurations = NULL;
+  }
+}
+
+static void
 gobject_class_finalize (GObject *object)
 {
   UsbemuDevice *device = USBEMU_DEVICE (object);
@@ -159,6 +175,7 @@ usbemu_device_class_init (UsbemuDeviceClass *device_class)
 
   object_class->set_property = gobject_class_set_property;
   object_class->get_property = gobject_class_get_property;
+  object_class->dispose = gobject_class_dispose;
   object_class->finalize = gobject_class_finalize;
 
   /* signals */
@@ -670,4 +687,103 @@ usbemu_device_set_serial (UsbemuDevice *device,
   if (priv->serial != NULL)
     g_free (priv->serial);
   priv->serial = g_strdup (serial);
+}
+
+/**
+ * usbemu_device_add_configuration:
+ * @device: (in): a #UsbemuDevice object.
+ * @configuration: (in): a #UsbemuConfiguration object.
+ *
+ * Add a configuration to device. The configuration object must not have been
+ * added to other device.
+ *
+ * Returns: %TRUE if succeeded. %FALSE otherwise.
+ */
+gboolean
+usbemu_device_add_configuration (UsbemuDevice        *device,
+                                 UsbemuConfiguration *configuration)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), FALSE);
+  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), FALSE);
+
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+  guint bConfigurationValue;
+
+  if (usbemu_configuration_get_device (configuration) != NULL)
+    return FALSE;
+
+  priv->configurations = g_slist_append (priv->configurations,
+                                         g_object_ref (configuration));
+  bConfigurationValue = g_slist_length (priv->configurations);
+  _usbemu_configuration_set_device (configuration, device, bConfigurationValue);
+
+  return TRUE;
+}
+
+/**
+ * usbemu_device_get_configuration:
+ * @device: (in): a #UsbemuDevice object.
+ * @configuration_value: the value used to identify a #UsbemuConfiguration
+ *                       object.
+ *
+ * Get the #UsbemuConfiguration of a device with specified configuration value.
+ *
+ * Returns: (transfer none): a #UsbemuConfiguration if available, or %NULL
+ *          otherwise.
+ */
+UsbemuConfiguration*
+usbemu_device_get_configuration (UsbemuDevice *device,
+                                 guint         configuration_value)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), NULL);
+  g_return_val_if_fail (configuration_value > 0, NULL);
+
+  if (configuration_value == 0)
+    return NULL;
+
+  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
+  return (UsbemuConfiguration*) g_slist_nth_data (priv->configurations,
+                                                  configuration_value - 1);
+}
+
+/**
+ * usbemu_device_get_configurations:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get all available configurations of a device.
+ *
+ * Returns: (transfer full) (type GSList(UsbemuConfiguration)): A list of
+ *          #UsbemuConfiguration objects added to the device. Free with:
+ *          |[<!-- language="C" -->
+ *          g_slist_free_full (slist, (GDestoryNotify) g_object_unref);
+ *          ]|
+ */
+GSList*
+usbemu_device_get_configurations (UsbemuDevice *device)
+{
+  GSList *slist;
+
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), NULL);
+
+  slist = USBEMU_DEVICE_GET_PRIVATE (device)->configurations;
+  if (slist != NULL)
+    slist = g_slist_copy_deep (slist, (GCopyFunc) g_object_ref, NULL);
+
+  return slist;
+}
+
+/**
+ * usbemu_device_get_n_configurations:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get number of available configurations in this device.
+ *
+ * Returns: number of available configurations.
+ */
+guint
+usbemu_device_get_n_configurations (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
+
+  return g_slist_length (USBEMU_DEVICE_GET_PRIVATE (device)->configurations);
 }

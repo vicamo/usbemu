@@ -55,6 +55,8 @@ G_DECLARE_DERIVABLE_TYPE (UsbemuDevice, usbemu_device, USBEMU, DEVICE,
  */
 #define USBEMU_DEVICE_SIGNAL_DETACHED "detached"
 
+struct _UsbemuConfiguration;
+
 struct _UsbemuDeviceClass {
   GObjectClass parent_class;
 
@@ -224,5 +226,12 @@ void          usbemu_device_set_product_name      (UsbemuDevice  *device,
 const gchar*  usbemu_device_get_serial            (UsbemuDevice  *device);
 void          usbemu_device_set_serial            (UsbemuDevice  *device,
                                                    const gchar   *serial);
+
+gboolean                     usbemu_device_add_configuration    (UsbemuDevice                *device,
+                                                                 struct _UsbemuConfiguration *configuration);
+struct _UsbemuConfiguration* usbemu_device_get_configuration    (UsbemuDevice                *device,
+                                                                 guint                        configuration_value);
+GSList*                      usbemu_device_get_configurations   (UsbemuDevice                *device);
+guint                        usbemu_device_get_n_configurations (UsbemuDevice                *device);
 
 G_END_DECLS

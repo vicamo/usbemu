@@ -51,6 +51,8 @@ lib_LTLIBRARIES += \
 
 usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu.h \
+  usbemu/usbemu-configuration.c \
+  usbemu/usbemu-configuration.h \
   usbemu/usbemu-device.c \
   usbemu/usbemu-device.h \
   usbemu/usbemu-errors.c \
@@ -66,6 +68,7 @@ usbemu_libusbemu_la_LDFLAGS = \
 
 usbemu_include_HEADERS += \
   usbemu/usbemu.h \
+  usbemu/usbemu-configuration.h \
   usbemu/usbemu-device.h \
   usbemu/usbemu-errors.h
 
@@ -77,6 +80,7 @@ libusbemu_enum_built_sources = \
   usbemu/usbemu-enums.h
 
 libusbemu_enum_check_headers = \
+  usbemu/usbemu-configuration.h \
   usbemu/usbemu-device.h \
   usbemu/usbemu-errors.h
 

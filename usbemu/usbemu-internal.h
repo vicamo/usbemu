@@ -21,6 +21,7 @@
 #error "usbemu-internal.h accidentally included in public headers."
 #endif
 
+#include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-device.h"
 
 /**
@@ -35,5 +36,9 @@ G_BEGIN_DECLS
 
 void _usbemu_device_set_attached (UsbemuDevice *device,
                                   gboolean      attached);
+
+void _usbemu_configuration_set_device (UsbemuConfiguration *configuration,
+                                       UsbemuDevice        *device,
+                                       guint                configuration_value);
 
 G_END_DECLS
