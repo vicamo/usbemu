@@ -23,20 +23,6 @@
 
 #include <glib.h>
 
-#define USBEMU_DBUS_PATH "/org/usbemu"
-
-/* Prefix for object paths */
-#define USBEMU_DBUS_MANAGER_PATH USBEMU_DBUS_PATH "/UsbemuManager"
-#define USBEMU_DBUS_DEVICE_PATH  USBEMU_DBUS_MANAGER_PATH "/Devices"
-
-#define USBEMU_DBUS_PREFIX "org.usbemu.UsbemuManager"
-
-/* Prefix for interfaces */
-#define USBEMU_DBUS_DEVICE_PREFIX USBEMU_DBUS_PREFIX ".Device"
-
-/* Prefix for DBus errors */
-#define USBEMU_DBUS_ERROR_PREFIX USBEMU_DBUS_PREFIX ".Error"
-
 /**
  * UsbemuError:
  * @USBEMU_ERROR_FAILED: unknown or unclassified failure.
@@ -50,5 +36,11 @@ typedef enum { /*< underscore_name=usbemu_error >*/
 } UsbemuError;
 
 GQuark usbemu_error_quark (void);
+
+/**
+ * USBEMU_ERROR:
+ *
+ * Error domain for USBEmu. Errors in this domain will be from the #UsbemuError
+ * enumeration. See #GError for more information on error domains.
+ */
 #define USBEMU_ERROR (usbemu_error_quark ())
-#define USBEMU_ERROR_DBUS_PREFIX USBEMU_DBUS_ERROR_PREFIX
