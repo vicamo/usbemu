@@ -23,6 +23,8 @@
 
 #include <glib.h>
 
+G_BEGIN_DECLS
+
 /**
  * UsbemuError:
  * @USBEMU_ERROR_FAILED: unknown or unclassified failure.
@@ -44,3 +46,5 @@ GQuark usbemu_error_quark (void);
  * enumeration. See #GError for more information on error domains.
  */
 #define USBEMU_ERROR (usbemu_error_quark ())
+
+G_END_DECLS
