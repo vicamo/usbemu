@@ -50,11 +50,20 @@ enum
 
 static GParamSpec *props[N_PROPERTIES] = { NULL, };
 
+/* virtual methods for GObjectClass */
+static void gobject_class_set_property (GObject *object, guint prop_id,
+                                        const GValue *value, GParamSpec *pspec);
+static void gobject_class_get_property (GObject *object, guint prop_id,
+                                        GValue *value, GParamSpec *pspec);
+static void gobject_class_finalize (GObject *object);
+/* virtual methods for UsbemuDeviceClass */
+static void usbemu_device_class_init (UsbemuDeviceClass *device_class);
+
 static void
-set_property (GObject      *object,
-              guint         prop_id,
-              const GValue *value,
-              GParamSpec   *pspec)
+gobject_class_set_property (GObject      *object,
+                            guint         prop_id,
+                            const GValue *value,
+                            GParamSpec   *pspec)
 {
   UsbemuDevice *device = USBEMU_DEVICE (object);
   UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
@@ -67,10 +76,10 @@ set_property (GObject      *object,
 }
 
 static void
-get_property (GObject    *object,
-              guint       prop_id,
-              GValue     *value,
-              GParamSpec *pspec)
+gobject_class_get_property (GObject    *object,
+                            guint       prop_id,
+                            GValue     *value,
+                            GParamSpec *pspec)
 {
   UsbemuDevice *device = USBEMU_DEVICE (object);
 
@@ -82,7 +91,7 @@ get_property (GObject    *object,
 }
 
 static void
-finalize (GObject *object G_GNUC_UNUSED)
+gobject_class_finalize (GObject *object G_GNUC_UNUSED)
 {
 }
 
@@ -93,9 +102,9 @@ usbemu_device_class_init (UsbemuDeviceClass *device_class)
 
   /* virtual methods */
 
-  object_class->set_property = set_property;
-  object_class->get_property = get_property;
-  object_class->finalize = finalize;
+  object_class->set_property = gobject_class_set_property;
+  object_class->get_property = gobject_class_get_property;
+  object_class->finalize = gobject_class_finalize;
 
   /* properties */
 
