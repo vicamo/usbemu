@@ -23,6 +23,7 @@
 
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-device.h"
+#include "usbemu/usbemu-interface.h"
 
 /**
  * SECTION:usbemu-internal
@@ -40,5 +41,10 @@ void _usbemu_device_set_attached (UsbemuDevice *device,
 void _usbemu_configuration_set_device (UsbemuConfiguration *configuration,
                                        UsbemuDevice        *device,
                                        guint                configuration_value);
+
+void _usbemu_interface_set_configuration (UsbemuInterface     *interface,
+                                          UsbemuConfiguration *configuration,
+                                          guint                interface_number,
+                                          guint                alternate_setting);
 
 G_END_DECLS

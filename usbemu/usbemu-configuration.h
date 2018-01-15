@@ -56,6 +56,8 @@ G_DECLARE_FINAL_TYPE (UsbemuConfiguration, usbemu_configuration,
  */
 #define USBEMU_CONFIGURATION_PROP_MAX_POWER "max-power"
 
+struct _UsbemuInterface;
+
 /**
  * UsbemuConfigurationAttributes:
  * @USBEMU_CONFIGURATION_ATTR_RESERVED_0: Reserved.
@@ -104,5 +106,11 @@ void         usbemu_configuration_set_max_power           (UsbemuConfiguration *
                                                            guint                max_power);
 
 UsbemuDevice* usbemu_configuration_get_device (UsbemuConfiguration *configuration);
+
+gint    usbemu_configuration_add_alternate_interfaces   (UsbemuConfiguration      *configuration,
+                                                         struct _UsbemuInterface **interfaces);
+GSList* usbemu_configuration_get_alternate_interfaces   (UsbemuConfiguration      *configuration,
+                                                         guint                     interface_number);
+guint   usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration      *configuration);
 
 G_END_DECLS

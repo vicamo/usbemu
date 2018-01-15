@@ -23,5 +23,6 @@
 #include <usbemu/usbemu-device.h>
 #include <usbemu/usbemu-enums.h>
 #include <usbemu/usbemu-errors.h>
+#include <usbemu/usbemu-interface.h>
 
 #undef __USBEMU_USBEMU_H_INSIDE__

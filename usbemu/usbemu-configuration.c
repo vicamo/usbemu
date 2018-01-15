@@ -21,6 +21,8 @@
 
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-enums.h"
+#include "usbemu/usbemu-interface.h"
+#include "usbemu/usbemu-internal.h"
 
 /**
  * SECTION:usbemu-configuration
@@ -53,6 +55,7 @@ struct _UsbemuConfiguration {
   guint bMaxPower;
 
   UsbemuDevice *device;
+  GSList *interfaces;
 };
 
 G_DEFINE_TYPE (UsbemuConfiguration, usbemu_configuration, G_TYPE_OBJECT)
@@ -83,6 +86,8 @@ static void gobject_class_dispose (GObject *object);
 static void gobject_class_finalize (GObject *object);
 /* virtual methods for UsbemuConfigurationClass */
 static void usbemu_configuration_class_init (UsbemuConfigurationClass *configuration_class);
+/* helper functions */
+static void _free_interfaces_slist_inner (GSList *slist);
 
 static void
 gobject_class_set_property (GObject      *object,
@@ -135,9 +140,21 @@ gobject_class_get_property (GObject    *object,
 }
 
 static void
+_free_interfaces_slist_inner (GSList *slist)
+{
+  g_slist_free_full (slist, (GDestroyNotify) g_object_unref);
+}
+
+static void
 gobject_class_dispose (GObject *object)
 {
   UsbemuConfiguration *configuration = USBEMU_CONFIGURATION (object);
+
+  if (configuration->interfaces != NULL) {
+    g_slist_free_full (configuration->interfaces,
+                       (GDestroyNotify) _free_interfaces_slist_inner);
+    configuration->interfaces = NULL;
+  }
 
   g_clear_object (&configuration->device);
 }
@@ -208,6 +225,7 @@ usbemu_configuration_init (UsbemuConfiguration *configuration)
   configuration->bmAttributes = USBEMU_CONFIGURATION_PROP_ATTRIBUTES__DEFAULT;
   configuration->bMaxPower = USBEMU_CONFIGURATION_PROP_MAX_POWER__DEFAULT;
   configuration->device = NULL;
+  configuration->interfaces = NULL;
 }
 
 /**
@@ -383,6 +401,92 @@ usbemu_configuration_get_device (UsbemuConfiguration *configuration)
   g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), NULL);
 
   return g_object_ref (configuration->device);
+}
+
+/**
+ * usbemu_configuration_add_alternate_interfaces:
+ * @configuration: (in): the #UsbemuConfiguration object.
+ * @interfaces: (in) (array zero-terminated=1) (transfer none): a
+ *     %NULL-terminated array of #UsbemuInterface objects.
+ *
+ * Add an multiple interfaces to configuration. These interfaces, if valid, will
+ * be assigned with a new, identical interface number, and each of them an
+ * increamental alternate setting number.
+ *
+ * Returns: interface number of added interfaces if succeeded. -1 otherwise.
+ */
+gint
+usbemu_configuration_add_alternate_interfaces (UsbemuConfiguration  *configuration,
+                                               UsbemuInterface     **interfaces)
+{
+  UsbemuInterface **interface;
+  guint interface_number, alternate_setting;
+  GSList *slist;
+
+  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), -1);
+  g_return_val_if_fail ((interfaces != NULL), -1);
+
+  for (interface = interfaces; *interface != NULL; ++interface) {
+    if (usbemu_interface_get_configuration (*interface) != NULL)
+      return -1;
+  }
+
+  interface_number = g_slist_length (configuration->interfaces);
+  slist = NULL;
+  for (interface = interfaces; *interface != NULL; ++interface) {
+    slist = g_slist_append (slist, g_object_ref (*interface));
+  }
+  configuration->interfaces = g_slist_append (configuration->interfaces, slist);
+
+  alternate_setting = 0;
+  for (interface = interfaces; *interface != NULL;
+       ++interface, ++alternate_setting) {
+    _usbemu_interface_set_configuration (*interface, configuration,
+                                         interface_number, alternate_setting);
+  }
+
+  return interface_number;
+}
+
+/**
+ * usbemu_configuration_get_alternate_interfaces:
+ * @configuration: (in): the #UsbemuConfiguration object.
+ * @interface_number: a interface number.
+ *
+ * Get all interfaces with specified interface number in this configuration.
+ *
+ * Returns: (transfer full) (type GSList(UsbemuInterface)):
+ *          #UsbemuInterface objects or %NULL if not found.
+ */
+GSList*
+usbemu_configuration_get_alternate_interfaces (UsbemuConfiguration *configuration,
+                                               guint                interface_number)
+{
+  GSList *slist;
+
+  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), NULL);
+
+  slist = g_slist_nth_data (configuration->interfaces, interface_number);
+  if (slist != NULL)
+    slist = g_slist_copy_deep (slist, (GCopyFunc) g_object_ref, NULL);
+
+  return slist;
+}
+
+/**
+ * usbemu_configuration_get_n_alternate_interfaces:
+ * @configuration: (in): the #UsbemuConfiguration object.
+ *
+ * Get the number of available interfaces set.
+ *
+ * Returns: number of available interfaces set.
+ */
+guint
+usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration *configuration)
+{
+  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), 0);
+
+  return g_slist_length (configuration->interfaces);
 }
 
 void

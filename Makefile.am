@@ -57,6 +57,8 @@ usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu-device.h \
   usbemu/usbemu-errors.c \
   usbemu/usbemu-errors.h \
+  usbemu/usbemu-interface.c \
+  usbemu/usbemu-interface.h \
   usbemu/usbemu-internal.h
 usbemu_libusbemu_la_CFLAGS = \
   -DLIBUSBEMU_COMPILATION \
@@ -70,7 +72,8 @@ usbemu_include_HEADERS += \
   usbemu/usbemu.h \
   usbemu/usbemu-configuration.h \
   usbemu/usbemu-device.h \
-  usbemu/usbemu-errors.h
+  usbemu/usbemu-errors.h \
+  usbemu/usbemu-interface.h
 
 ###############################
 ## libusbemu - enums
