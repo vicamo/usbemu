@@ -6,13 +6,39 @@ services:
 - docker
 
 env:
-- CI_DOCKER_IMAGE=buildpack-deps:sid
+  global:
+  - CI_DOCKER_IMAGE=buildpack-deps:sid
+  - DOCKER_EXEC_ROOT="docker exec --user root test_container"
+  - DOCKER_EXEC="docker exec test_container"
 
 before_install:
 - docker pull $CI_DOCKER_IMAGE
+- |
+  docker run --detach --tty \
+    --name test_container \
+    --volume ${TRAVIS_BUILD_DIR%${TRAVIS_REPO_SLUG}}:${TRAVIS_BUILD_DIR%${TRAVIS_REPO_SLUG}} \
+    --workdir ${TRAVIS_BUILD_DIR} \
+    ${CI_DOCKER_IMAGE} \
+    /bin/bash
+
+install:
+- ${DOCKER_EXEC_ROOT} apt-get update --quiet --quiet
+- ${DOCKER_EXEC_ROOT} apt-get install --no-install-recommends --yes
+    autoconf-archive
+    build-essential
+    gtk-doc-tools
+    libglib2.0-dev
+    libgudev-1.0-dev
+- ${DOCKER_EXEC} gcc --version
 
 script:
-- docker run -t --rm -v $TRAVIS_BUILD_DIR:$TRAVIS_BUILD_DIR -w $TRAVIS_BUILD_DIR $CI_DOCKER_IMAGE ./travis.sh
+- ${DOCKER_EXEC} ./autogen.sh --enable-gtk-doc
+- ${DOCKER_EXEC} make V=1 -j $(nproc)
+- ${DOCKER_EXEC} sh -c 'make install V=1 DESTDIR=$(pwd)/x && rm -rf $(pwd)/x'
+- ${DOCKER_EXEC} make V=1 install
+- ${DOCKER_EXEC} make V=1 distcheck
+- ${DOCKER_EXEC} make V=1 clean
+- git status
 
 notifications:
   slack:
