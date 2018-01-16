@@ -19,6 +19,8 @@
 #include "config.h"
 #endif
 
+#include <string.h>
+
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-enums.h"
@@ -55,6 +57,8 @@ typedef struct  _UsbemuDevicePrivate {
   gint bInterfaceClass;
   guint bInterfaceSubClass;
   guint bInterfaceProtocol;
+  UsbemuEndpointEntry endpoints[(USBEMU_NUM_ENDPOINTS - 1) * 2 + 1];
+  gsize n_endpoints;
 } UsbemuInterfacePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuInterface, usbemu_interface, G_TYPE_OBJECT)
@@ -308,6 +312,8 @@ usbemu_interface_init (UsbemuInterface *interface)
   priv->bInterfaceSubClass = USBEMU_INTERFACE_PROP_SUB_CLASS__DEFAULT;
   priv->bInterfaceProtocol = USBEMU_INTERFACE_PROP_PROTOCOL__DEFAULT;
   priv->configuration = NULL;
+  memset (priv->endpoints, 0, sizeof (priv->endpoints));
+  priv->n_endpoints = 0;
 }
 
 /**
@@ -531,6 +537,59 @@ usbemu_interface_get_configuration (UsbemuInterface *interface)
   g_return_val_if_fail (USBEMU_IS_INTERFACE (interface), NULL);
 
   return g_object_ref (USBEMU_INTERFACE_GET_PRIVATE (interface)->configuration);
+}
+
+/**
+ * usbemu_interface_add_endpoint_entries:
+ * @interface: a #UsbemuInterface object.
+ * @entries: a %NULL-terminated array of #UsbemuEndpointEntry.
+ *
+ * Add endpoints to interface.
+ */
+void
+usbemu_interface_add_endpoint_entries (UsbemuInterface           *interface,
+                                       const UsbemuEndpointEntry *entries)
+{
+  gsize n_entries;
+  UsbemuInterfacePrivate *priv;
+  gboolean valid = TRUE;
+
+  g_return_if_fail (USBEMU_IS_INTERFACE (interface));
+  g_return_if_fail (entries != NULL);
+
+  for (n_entries = 0; entries[n_entries].endpoint_number; n_entries++);
+
+  priv = USBEMU_INTERFACE_GET_PRIVATE (interface);
+  if ((n_entries + priv->n_endpoints) >= G_N_ELEMENTS (priv->endpoints))
+    return;
+
+  memcpy (&priv->endpoints[priv->n_endpoints], entries,
+          n_entries * sizeof (priv->endpoints[0]));
+  n_entries += priv->n_endpoints;
+
+  /* FIXME: checks here */
+
+  if (valid)
+    priv->n_endpoints = n_entries;
+  else
+    priv->endpoints[priv->n_endpoints].endpoint_number = 0;
+}
+
+/**
+ * usbemu_interface_get_endpoint_entries:
+ * @interface: a #UsbemuInterface object.
+ *
+ * Get all #UsbemuEndpointEntry entries added to this interface.
+ *
+ * Returns: (transfer none) (array zero-terminated=1): %NULL-terminated array of
+ *          #UsbemuEndpointEntry added to this interface.
+ */
+const UsbemuEndpointEntry*
+usbemu_interface_get_endpoint_entries (UsbemuInterface *interface)
+{
+  g_return_val_if_fail (USBEMU_IS_INTERFACE (interface), NULL);
+
+  return USBEMU_INTERFACE_GET_PRIVATE (interface)->endpoints;
 }
 
 void
