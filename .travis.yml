@@ -34,6 +34,9 @@ install:
 script:
 - ${DOCKER_EXEC} ./autogen.sh --enable-gtk-doc
 - ${DOCKER_EXEC} make V=1 -j $(nproc)
+- test "$(stat -c %s docs/reference/usbemu-undeclared.txt 2>/dev/null)" = "0"
+- test "$(stat -c %s docs/reference/usbemu-unused.txt 2>/dev/null)" = "0"
+- test -n "$(grep '100% symbol docs coverage' docs/reference/usbemu-undocumented.txt)"
 - ${DOCKER_EXEC} sh -c 'make install V=1 DESTDIR=$(pwd)/x && rm -rf $(pwd)/x'
 - ${DOCKER_EXEC} make V=1 install
 - ${DOCKER_EXEC} make V=1 distcheck
