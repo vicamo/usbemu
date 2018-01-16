@@ -53,6 +53,7 @@ usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu.h \
   usbemu/usbemu-device.c \
   usbemu/usbemu-device.h \
+  usbemu/usbemu-errors.c \
   usbemu/usbemu-errors.h \
   usbemu/usbemu-internal.h
 usbemu_libusbemu_la_CFLAGS = \
@@ -65,7 +66,8 @@ usbemu_libusbemu_la_LDFLAGS = \
 
 usbemu_include_HEADERS += \
   usbemu/usbemu.h \
-  usbemu/usbemu-device.h
+  usbemu/usbemu-device.h \
+  usbemu/usbemu-errors.h
 
 ###############################
 ## libusbemu - enums
@@ -91,30 +93,6 @@ EXTRA_DIST += \
 
 usbemu_include_HEADERS += \
   usbemu/usbemu-enums.h
-
-###############################
-## libusbemu - errors
-
-libusbemu_error_built_sources = \
-  usbemu/usbemu-errors.c
-
-libusbemu_error_check_headers = \
-  usbemu/usbemu-errors.h
-
-$(libusbemu_error_built_sources): Makefile.am $(libusbemu_error_check_headers) \
-  $(libusbemu_error_built_sources:=.template)
-	$(AM_V_GEN) $(GLIB_MKENUMS) \
-	  --template $(addprefix $(srcdir)/,$@.template) \
-	  $(addprefix $(srcdir)/,$(libusbemu_error_check_headers)) > $@
-
-BUILT_SOURCES += $(libusbemu_error_built_sources)
-usbemu_libusbemu_la_SOURCES += $(libusbemu_error_built_sources)
-
-EXTRA_DIST += \
-  $(libusbemu_error_built_sources:=.template)
-
-usbemu_include_HEADERS += \
-  usbemu/usbemu-errors.h
 
 ###############################
 ## pkg-config DATA

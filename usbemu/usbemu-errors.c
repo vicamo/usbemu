@@ -1,6 +1,5 @@
-/*** BEGIN file-header ***/
 /* usbemu - USB Emulation Library
- * Copyright (C) 2016 You-Sheng Yang
+ * Copyright (C) 2018 You-Sheng Yang
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,21 +21,6 @@
 
 #include <glib.h>
 
-/*** END file-header ***/
+#include "usbemu/usbemu-errors.h"
 
-/*** BEGIN file-production ***/
-#include "usbemu/@basename@"
-/*** END file-production ***/
-
-/*** BEGIN value-header ***/
-/*** END value-header ***/
-
-/*** BEGIN value-production ***/
-/*** END value-production ***/
-
-/*** BEGIN value-tail ***/
-G_DEFINE_QUARK (@ENUMNAME@, @enum_name@)
-/*** END value-tail ***/
-
-/*** BEGIN file-tail ***/
-/*** END file-tail ***/
+G_DEFINE_QUARK (USBEMU_ERROR, usbemu_error)
