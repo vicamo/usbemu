@@ -22,6 +22,23 @@
 #include "usbemu/usbemu-device.h"
 
 /**
+ * SECTION:usbemu
+ * @short_description: USB device emulation library
+ * @include usbemu/usbemu.h
+ *
+ * USBEmu aims to provide #GObject-based API for USB device emulation initially
+ * based on function provided by Linux kernel vhci-hcd module.
+ */
+
+/**
+ * SECTION:usbemu-device
+ * @short_description: USB device emulation class
+ * @include usbemu/usbemu.h
+ *
+ * #UsbemuDevice is the core class of USB device emulation.
+ */
+
+/**
  * UsbemuDevice:
  *
  * An object representing emulated USB device.
@@ -177,6 +194,8 @@ usbemu_device_init (UsbemuDevice *device)
 
 /**
  * usbemu_device_new:
+ *
+ * Create a new #UsbemuDevice instance.
  *
  * Returns: (transfer full) (type UsbemuDevice): The constructed device object
  *          or %NULL.

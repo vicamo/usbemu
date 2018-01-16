@@ -23,4 +23,12 @@
 
 #include "usbemu/usbemu-errors.h"
 
+/**
+ * SECTION:usbemu-errors
+ * @short_description: utility functions for USBEmu error domain
+ * @include: usbemu/usbemu.h
+ *
+ * This section currently contains only usbemu_error_quark().
+ */
+
 G_DEFINE_QUARK (USBEMU_ERROR, usbemu_error)

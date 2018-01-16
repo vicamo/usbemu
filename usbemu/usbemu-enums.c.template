@@ -21,6 +21,16 @@
 #endif
 
 #include "usbemu/usbemu-enums.h"
+
+/**
+ * SECTION:usbemu-enums
+ * @short_description: utility functions for USBEmu enum types
+ * @include: usbemu/usbemu.h
+ *
+ * This section contains automatically generated utility functions for enum
+ * types used in USBEmu.
+ */
+
 /*** END file-header ***/
 
 /*** BEGIN file-production ***/

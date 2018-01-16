@@ -37,6 +37,11 @@ typedef enum { /*< underscore_name=usbemu_error >*/
   USBEMU_ERROR_DEVICE_UNAVAILABLE, /*< nick=DeviceUnavailable >*/
 } UsbemuError;
 
+/**
+ * usbemu_error_quark:
+ *
+ * #GQuark for USBEmu error domain. Use #USBEMU_ERROR instead.
+ */
 GQuark usbemu_error_quark (void);
 
 /**

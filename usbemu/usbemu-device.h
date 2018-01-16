@@ -25,6 +25,11 @@
 
 G_BEGIN_DECLS
 
+/**
+ * USBEMU_TYPE_DEVICE:
+ *
+ * Convenient macro for usbemu_device_get_type().
+ */
 #define USBEMU_TYPE_DEVICE  (usbemu_device_get_type ())
 
 G_DECLARE_DERIVABLE_TYPE (UsbemuDevice, usbemu_device, USBEMU, DEVICE,

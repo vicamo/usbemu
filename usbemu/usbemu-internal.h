@@ -23,6 +23,14 @@
 
 #include "usbemu/usbemu-device.h"
 
+/**
+ * SECTION:usbemu-internal
+ * @short_description: internal functions for libusbemu
+ * @stability: internal
+ *
+ * Internal used functions. Mainly protected member functions.
+ */
+
 G_BEGIN_DECLS
 
 void _usbemu_device_set_attached (UsbemuDevice *device,
