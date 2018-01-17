@@ -258,8 +258,6 @@ usbemu_configuration_new_full (const gchar *name,
                                guint        attributes,
                                guint        max_power)
 {
-  g_return_val_if_fail (name != NULL, NULL);
-
   return g_object_new (USBEMU_TYPE_CONFIGURATION,
                        USBEMU_CONFIGURATION_PROP_NAME, name,
                        USBEMU_CONFIGURATION_PROP_ATTRIBUTES, attributes,

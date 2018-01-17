@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 
+include $(top_srcdir)/glib-tap.mk
+
 SUBDIRS = . docs/reference
 
 usbemu_includedir = $(includedir)/usbemu-$(USBEMU_API_VERSION)/usbemu
@@ -8,19 +10,17 @@ usbemu_include_HEADERS =
 bin_PROGRAMS =
 lib_LTLIBRARIES =
 
-EXTRA_DIST = \
+EXTRA_DIST += \
   autogen.sh \
   INSTALL \
-  README
-
-BUILT_SOURCES =
-CLEANFILES =
-DISTCLEANFILES =
+  README \
+  tap-driver.sh \
+  tap-test
 
 GITIGNOREFILES = \
   $(DIST_ARCHIVES)
 
-MAINTAINERCLEANFILES = \
+MAINTAINERCLEANFILES += \
   $(GITIGNORE_MAINTAINERCLEANFILES_TOPLEVEL) \
   $(GITIGNORE_MAINTAINERCLEANFILES_M4_LIBTOOL) \
   $(GITIGNORE_MAINTAINERCLEANFILES_MAKEFILE_IN) \
@@ -102,6 +102,33 @@ EXTRA_DIST += \
 
 usbemu_include_HEADERS += \
   usbemu/usbemu-enums.h
+
+###############################
+## tests
+
+test_cflags = \
+  $(BASE_DEPS_CFLAGS)
+test_ldadd = \
+  $(BASE_DEPS_LIBS) \
+  usbemu/libusbemu.la
+
+test_programs = \
+  tests/test-usbemu-enums \
+  tests/test-usbemu-error \
+  tests/test-usbemu-device \
+  tests/test-usbemu-configuration \
+  tests/test-usbemu-interface
+
+tests_test_usbemu_enums_CFLAGS = $(test_cflags)
+tests_test_usbemu_enums_LDADD = $(test_ldadd)
+tests_test_usbemu_error_CFLAGS = $(test_cflags)
+tests_test_usbemu_error_LDADD = $(test_ldadd)
+tests_test_usbemu_device_CFLAGS = $(test_cflags)
+tests_test_usbemu_device_LDADD = $(test_ldadd)
+tests_test_usbemu_configuration_CFLAGS = $(test_cflags)
+tests_test_usbemu_configuration_LDADD = $(test_ldadd)
+tests_test_usbemu_interface_CFLAGS = $(test_cflags)
+tests_test_usbemu_interface_LDADD = $(test_ldadd)
 
 ###############################
 ## pkg-config DATA

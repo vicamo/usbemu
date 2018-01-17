@@ -54,7 +54,7 @@ typedef struct  _UsbemuDevicePrivate {
   guint bAlternateSetting;
 
   gchar *name;
-  gint bInterfaceClass;
+  UsbemuClasses bInterfaceClass;
   guint bInterfaceSubClass;
   guint bInterfaceProtocol;
   UsbemuEndpointEntry endpoints[(USBEMU_NUM_ENDPOINTS - 1) * 2 + 1];
@@ -84,7 +84,7 @@ static GParamSpec *props[N_PROPERTIES] = { NULL, };
 #define USBEMU_INTERFACE_PROP_ALTERNATE_SETTING__DEFAULT 0
 #define USBEMU_INTERFACE_PROP_NAME__DEFAULT NULL
 #define USBEMU_INTERFACE_PROP_CLASS__DEFAULT USBEMU_CLASS_VENDOR_SPECIFIC
-#define USBEMU_INTERFACE_PROP_SUB_CLASS__DEFAULT 0xFF
+#define USBEMU_INTERFACE_PROP_SUB_CLASS__DEFAULT 0
 #define USBEMU_INTERFACE_PROP_PROTOCOL__DEFAULT USBEMU_PROTOCOL_VENDOR_SPECIFIC
 
 /* virtual methods for GObjectClass */

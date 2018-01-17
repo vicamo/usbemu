@@ -236,9 +236,10 @@ usbemu_device_init (UsbemuDevice *device)
   priv->idVendor = 0xdead;
   priv->idProduct = 0xbeef;
   priv->bcdDevice = 0x100;
-  priv->manufacturer = NULL;
-  priv->product = NULL;
-  priv->serial = NULL;
+  priv->manufacturer = g_strdup (PACKAGE_NAME);
+  priv->product = g_strdup ("emulated device");
+  /* `echo -n dead:beef | md5sum` */
+  priv->serial = g_strdup ("9641c4a0c0d26686a3fcdc92711f8f42");
 }
 
 /**
