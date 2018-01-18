@@ -59,6 +59,7 @@ usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu-errors.h \
   usbemu/usbemu-interface.c \
   usbemu/usbemu-interface.h \
+  usbemu/usbemu-internal.c \
   usbemu/usbemu-internal.h
 usbemu_libusbemu_la_CFLAGS = \
   -DLIBUSBEMU_COMPILATION \

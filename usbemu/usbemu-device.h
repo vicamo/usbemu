@@ -189,7 +189,11 @@ typedef enum /*< enum,prefix=USBEMU >*/
  */
 #define USBEMU_PROTOCOL_VENDOR_SPECIFIC 0xFF
 
-UsbemuDevice* usbemu_device_new ();
+UsbemuDevice* usbemu_device_new             ();
+UsbemuDevice* usbemu_device_new_from_argv   (gchar       **argv,
+                                             GError      **error);
+UsbemuDevice* usbemu_device_new_from_string (const gchar  *str,
+                                             GError      **error);
 
 gboolean usbemu_device_get_attached (UsbemuDevice *device);
 

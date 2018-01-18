@@ -19,6 +19,8 @@
 #include "config.h"
 #endif
 
+#include <glib.h>
+
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-enums.h"
 #include "usbemu/usbemu-interface.h"
@@ -265,6 +267,119 @@ usbemu_configuration_new_full (const gchar *name,
                        NULL);
 }
 
+UsbemuConfiguration*
+_usbemu_configuration_new_from_argv_inner (gchar    ***argv,
+                                           GError    **error,
+                                           gboolean    allow_remaining)
+{
+  GType configuration_type;
+  UsbemuConfiguration *configuration;
+  gchar **strv;
+  GArray *interfaces;
+
+  configuration_type = USBEMU_TYPE_CONFIGURATION;
+  configuration = (UsbemuConfiguration*)
+        _usbemu_object_new_from_argv (argv, &configuration_type, NULL, error);
+  if (configuration == NULL)
+    return NULL;
+
+  interfaces = g_array_new (TRUE, TRUE, sizeof (UsbemuInterface*));
+  g_array_set_clear_func (interfaces,
+                          (GDestroyNotify) _usbemu_object_unref_dereferenced);
+
+  strv = *argv;
+  while (*strv != NULL) {
+    if (g_ascii_strcasecmp (*strv, "--interface") == 0) {
+      ++strv;
+
+      if (interfaces->len) {
+        usbemu_configuration_add_alternate_interfaces (configuration,
+                                                       (UsbemuInterface**) interfaces->data);
+        g_array_remove_range (interfaces, 0, interfaces->len);
+      }
+      continue;
+    } else if (g_ascii_strcasecmp (*strv, "--alternate-setting") == 0) {
+      UsbemuInterface *interface;
+
+      ++strv;
+      interface = _usbemu_interface_new_from_argv_inner (&strv, error, TRUE);
+      if (interface != NULL) {
+        g_array_append_val (interfaces, interface);
+        continue;
+      }
+    } else if (allow_remaining && (**strv == '-')) {
+      break;
+    } else if (error != NULL) {
+      *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                            "unknown argument '%s'", *strv);
+    }
+
+    g_object_unref (configuration);
+    configuration = NULL;
+    break;
+  }
+  *argv = strv;
+
+  if ((configuration != NULL) && interfaces->len) {
+    usbemu_configuration_add_alternate_interfaces (configuration,
+                                                   (UsbemuInterface**) interfaces->data);
+  }
+
+  g_array_free (interfaces, TRUE);
+
+  return configuration;
+}
+
+/**
+ * usbemu_configuration_new_from_argv:
+ * @argv: (in) (array zero-terminated=1): configuration description.
+ * @error: (out) (optional): return location for error.
+ *
+ * Create #UsbemuConfiguration from tokenized command line string. See
+ * usbemu_device_new_from_string() for valid syntax.
+ *
+ * Returns: (transfer full): a newly created #UsbemuConfiguration object or
+ *          %NULL if failed.
+ */
+UsbemuConfiguration*
+usbemu_configuration_new_from_argv (gchar  **argv,
+                                    GError **error)
+{
+  g_return_val_if_fail ((argv != NULL), NULL);
+
+  return _usbemu_configuration_new_from_argv_inner (&argv, error, FALSE);
+}
+
+/**
+ * usbemu_configuration_new_from_string:
+ * @str: (in): command line like configuration description.
+ * @error: (out) (optional): return location for error.
+ *
+ * Create #UsbemuConfiguration from a command line like formated string. See
+ * usbemu_device_new_from_string() for valid syntax.
+ *
+ * Returns: (transfer full): a newly created #UsbemuConfiguration object or
+ *          %NULL if failed.
+ */
+UsbemuConfiguration*
+usbemu_configuration_new_from_string (const gchar  *str,
+                                      GError      **error)
+{
+  gint argc;
+  gchar **argv;
+  UsbemuConfiguration *configuration;
+
+  g_return_val_if_fail ((str != NULL), NULL);
+
+  if (!g_shell_parse_argv (str, &argc, &argv, error))
+    return NULL;
+
+  configuration = usbemu_configuration_new_from_argv (argv, error);
+  g_strfreev (argv);
+
+  return configuration;
+}
+
 /**
  * usbemu_configuration_get_configuration_value:
  * @configuration: (in): the #UsbemuConfiguration object.
@@ -398,7 +513,10 @@ usbemu_configuration_get_device (UsbemuConfiguration *configuration)
 {
   g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), NULL);
 
-  return g_object_ref (configuration->device);
+  if (configuration->device != NULL)
+    return g_object_ref (configuration->device);
+
+  return NULL;
 }
 
 /**

@@ -88,10 +88,14 @@ typedef enum /*< flags,prefix=USBEMU >*/
   USBEMU_CONFIGURATION_ATTR_RESERVED_7 = (0x1 << 7), /*< nick=RESERVED_7 >*/
 } UsbemuConfigurationAttributes;
 
-UsbemuConfiguration* usbemu_configuration_new      ();
-UsbemuConfiguration* usbemu_configuration_new_full (const gchar *name,
-                                                    guint        attributes,
-                                                    guint        max_power);
+UsbemuConfiguration* usbemu_configuration_new             ();
+UsbemuConfiguration* usbemu_configuration_new_full        (const gchar *name,
+                                                           guint        attributes,
+                                                           guint        max_power);
+UsbemuConfiguration* usbemu_configuration_new_from_argv   (gchar       **argv,
+                                                           GError      **error);
+UsbemuConfiguration* usbemu_configuration_new_from_string (const gchar  *str,
+                                                           GError      **error);
 
 /* Fields on standard configuration descriptor. */
 guint        usbemu_configuration_get_configuration_value (UsbemuConfiguration *configuration);

@@ -243,11 +243,15 @@ typedef struct {
   guint interval;
 } UsbemuEndpointEntry;
 
-UsbemuInterface* usbemu_interface_new      ();
-UsbemuInterface* usbemu_interface_new_full (const gchar   *name,
-                                            UsbemuClasses  klass,
-                                            guint          sub_class,
-                                            guint          protocol);
+UsbemuInterface* usbemu_interface_new             ();
+UsbemuInterface* usbemu_interface_new_full        (const gchar   *name,
+                                                   UsbemuClasses  klass,
+                                                   guint          sub_class,
+                                                   guint          protocol);
+UsbemuInterface* usbemu_interface_new_from_argv   (gchar       **argv,
+                                                   GError      **error);
+UsbemuInterface* usbemu_interface_new_from_string (const gchar  *str,
+                                                   GError      **error);
 
 guint         usbemu_interface_get_interface_number  (UsbemuInterface *interface);
 guint         usbemu_interface_get_alternate_setting (UsbemuInterface *interface);

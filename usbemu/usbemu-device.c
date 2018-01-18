@@ -21,6 +21,7 @@
 
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-configuration.h"
+#include "usbemu/usbemu-errors.h"
 #include "usbemu/usbemu-internal.h"
 
 /**
@@ -254,6 +255,109 @@ UsbemuDevice*
 usbemu_device_new ()
 {
   return g_object_new (USBEMU_TYPE_DEVICE, NULL);
+}
+
+UsbemuDevice*
+_usbemu_device_new_from_argv_inner (gchar    ***argv,
+                                    GError    **error,
+                                    gboolean    allow_remaining)
+{
+  GType device_type;
+  UsbemuDevice *device;
+  gchar **strv;
+
+  device_type = USBEMU_TYPE_DEVICE;
+  device = (UsbemuDevice*) _usbemu_object_new_from_argv (argv, &device_type,
+                                                         "object-type", error);
+  if (device == NULL)
+    return NULL;
+
+  strv = *argv;
+  while (*strv != NULL) {
+    if (g_ascii_strcasecmp (*strv, "--configuration") == 0) {
+      UsbemuConfiguration *configuration;
+
+      ++strv;
+      configuration =
+            _usbemu_configuration_new_from_argv_inner (&strv, error, TRUE);
+      if (configuration != NULL) {
+        usbemu_device_add_configuration (device, configuration);
+        g_object_unref (configuration);
+        continue;
+      }
+    } else if (allow_remaining && (**strv == '-')) {
+      break;
+    } else if (error != NULL) {
+      g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                   "unknown argument %s", *strv);
+    }
+
+    g_object_unref (device);
+    device = NULL;
+    break;
+  }
+  *argv = strv;
+
+  return device;
+}
+
+/**
+ * usbemu_device_new_from_argv:
+ * @argv: (in) (array zero-terminated=1): device description.
+ * @error: (out) (optional): return location for error.
+ *
+ * Create #UsbemuDevice from tokenized command line string. See
+ * usbemu_device_new_from_string() for valid syntax.
+ *
+ * Returns: (transfer full): a newly created #UsbemuDevice object or %NULL if
+ *          failed.
+ */
+UsbemuDevice*
+usbemu_device_new_from_argv (gchar  **argv,
+                             GError **error)
+{
+  g_return_val_if_fail ((argv != NULL), NULL);
+
+  return _usbemu_device_new_from_argv_inner (&argv, error, FALSE);
+}
+
+/**
+ * usbemu_device_new_from_string:
+ * @str: (in): command line like device description.
+ * @error: (out) (optional): return location for error.
+ *
+ * Create #UsbemuDevice from a command line like formated string. Valid syntax
+ * is:
+ * |[
+ * object-type=<device-type> [[<property-name>=<property-value>]...] \
+ *   [[--configuration [[<property-name>=<property-value>]...] \
+ *     [[--interface \
+ *       [[--alternate-setting object-type=<interface-type> [[<property-name>=<property-value>]...] \
+ *         [[--endpoint [[<field-name>=<field-value>]...]]...]
+ *        ]...]
+ *      ]...]
+ *    ]..]
+ * ]|
+ * Returns: (transfer full): a newly created #UsbemuDevice object or %NULL if
+ *          failed.
+ */
+UsbemuDevice*
+usbemu_device_new_from_string (const gchar  *str,
+                               GError      **error)
+{
+  gint argc;
+  gchar **argv;
+  UsbemuDevice *device;
+
+  g_return_val_if_fail ((str != NULL), NULL);
+
+  if (!g_shell_parse_argv (str, &argc, &argv, error))
+    return NULL;
+
+  device = usbemu_device_new_from_argv (argv, error);
+  g_strfreev (argv);
+
+  return device;
 }
 
 /**
@@ -710,7 +814,7 @@ usbemu_device_add_configuration (UsbemuDevice        *device,
   UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
   guint bConfigurationValue;
 
-  if (usbemu_configuration_get_device (configuration) != NULL)
+  if (usbemu_configuration_get_configuration_value (configuration) != 0)
     return FALSE;
 
   priv->configurations = g_slist_append (priv->configurations,
@@ -756,7 +860,7 @@ usbemu_device_get_configuration (UsbemuDevice *device,
  * Returns: (transfer full) (type GSList(UsbemuConfiguration)): A list of
  *          #UsbemuConfiguration objects added to the device. Free with:
  *          |[<!-- language="C" -->
- *          g_slist_free_full (slist, (GDestoryNotify) g_object_unref);
+ *          g_slist_free_full (slist, (GDestroyNotify) g_object_unref);
  *          ]|
  */
 GSList*

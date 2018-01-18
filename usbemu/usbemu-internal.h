@@ -21,6 +21,9 @@
 #error "usbemu-internal.h accidentally included in public headers."
 #endif
 
+#include <glib.h>
+#include <glib-object.h>
+
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-interface.h"
@@ -35,16 +38,32 @@
 
 G_BEGIN_DECLS
 
+UsbemuDevice* _usbemu_device_new_from_argv_inner (gchar    ***argv,
+                                                  GError    **error,
+                                                  gboolean    allow_remaining);
 void _usbemu_device_set_attached (UsbemuDevice *device,
                                   gboolean      attached);
 
+UsbemuConfiguration* _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
+                                                                GError    **error,
+                                                                gboolean    allow_remaining);
 void _usbemu_configuration_set_device (UsbemuConfiguration *configuration,
                                        UsbemuDevice        *device,
                                        guint                configuration_value);
 
+UsbemuInterface* _usbemu_interface_new_from_argv_inner (gchar    ***argv,
+                                                        GError    **error,
+                                                        gboolean    allow_remaining);
 void _usbemu_interface_set_configuration (UsbemuInterface     *interface,
                                           UsbemuConfiguration *configuration,
                                           guint                interface_number,
                                           guint                alternate_setting);
+
+void _usbemu_free_dereferenced (gchar **data);
+void _usbemu_object_unref_dereferenced (GObject **object);
+GObject* _usbemu_object_new_from_argv (gchar       ***argv,
+                                       GType         *base_type,
+                                       const gchar   *type_key,
+                                       GError       **error);
 
 G_END_DECLS

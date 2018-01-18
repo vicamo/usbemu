@@ -20,11 +20,13 @@
 #endif
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-enums.h"
 #include "usbemu/usbemu-interface.h"
+#include "usbemu/usbemu-internal.h"
 
 /**
  * SECTION:usbemu-interface
@@ -356,6 +358,214 @@ usbemu_interface_new_full (const gchar   *name,
                        NULL);
 }
 
+static gboolean
+_decode_endpoint_attributes_value (gchar *value,
+                                   guint8 *attributes)
+{
+  GEnumValue *enum_value;
+  gchar *p;
+  gint sync = 0, usage = 0;
+
+  g_assert_nonnull (value);
+  g_assert_nonnull (attributes);
+
+  do {
+    p = strchr (value, '|');
+    if (p != NULL) {
+      *p = '\0';
+      p++;
+    }
+
+    enum_value = usbemu_enum_get_value_by_name_or_nick (
+          USBEMU_TYPE_ENDPOINT_ISOCHRONOUS_SYNCS, value);
+    if (enum_value != NULL)
+      sync = enum_value->value;
+    else {
+      enum_value = usbemu_enum_get_value_by_name_or_nick (
+            USBEMU_TYPE_ENDPOINT_ISOCHRONOUS_USAGES, value);
+      if (enum_value != NULL)
+        usage = enum_value->value;
+      else
+        return FALSE;
+    }
+
+    value = p;
+  } while (value != NULL);
+
+  *attributes = (sync | usage);
+  return TRUE;
+}
+
+static gboolean
+_extract_endpoints_from_argv (gchar               ***argv,
+                              UsbemuEndpointEntry   *entry,
+                              GError               **error)
+{
+  gchar **strv, *k, *v;
+  gboolean ret = TRUE;
+  GEnumValue *enum_value;
+
+  g_assert_nonnull (argv);
+  g_assert_nonnull (entry);
+
+  strv = *argv;
+  while ((k = *strv) != NULL) {
+    if (*k == '-')
+      break;
+
+    ++strv;
+
+    v = strchr (k, '=');
+    if ((v == NULL) || (*(v + 1) == '\0') || (v == k)) {
+      ret = FALSE;
+      break;
+    }
+
+    *v = '\0'; ++v;
+
+#define DECODE_ENUM_FIELD(name, type) \
+    (g_ascii_strcasecmp (k, #name) == 0) { \
+      enum_value = usbemu_enum_get_value_by_name_or_nick (type, v); \
+      if (enum_value != NULL) { \
+        entry->name = enum_value->value; \
+        continue; \
+      } \
+    }
+
+    if DECODE_ENUM_FIELD (endpoint_number, USBEMU_TYPE_ENDPOINTS)
+    else if DECODE_ENUM_FIELD (direction, USBEMU_TYPE_ENDPOINT_DIRECTIONS)
+    else if DECODE_ENUM_FIELD (transfer, USBEMU_TYPE_ENDPOINT_TRANSFERS)
+    else if (g_ascii_strcasecmp (k, "attributes") == 0) {
+      if (_decode_endpoint_attributes_value (v, &entry->attributes))
+        continue;
+    } else if (g_ascii_strcasecmp (k, "max_packet_size") == 0) {
+      entry->max_packet_size = strtoul (v, NULL, 0);
+      continue;
+    } else if (g_ascii_strcasecmp (k, "additional_transactions") == 0) {
+      entry->additional_transactions = strtoul (v, NULL, 0);
+      continue;
+    } else if (g_ascii_strcasecmp (k, "interval") == 0) {
+      entry->interval = strtoul (v, NULL, 0);
+      continue;
+    }
+
+#undef DECODE_ENUM_FIELD
+
+    ret = FALSE;
+    break;
+  }
+  *argv = strv;
+
+  if (!ret && (error != NULL)) {
+    *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                          "syntax error at '%s'", k);
+  }
+
+  return ret;
+}
+
+UsbemuInterface*
+_usbemu_interface_new_from_argv_inner (gchar    ***argv,
+                                       GError    **error,
+                                       gboolean    allow_remaining)
+{
+  GType interface_type;
+  UsbemuInterface *interface;
+  gchar **strv;
+  GArray *endpoints;
+  UsbemuEndpointEntry *entry;
+
+  interface_type = USBEMU_TYPE_INTERFACE;
+  interface = (UsbemuInterface*)
+        _usbemu_object_new_from_argv (argv, &interface_type, "object-type",
+                                      error);
+  if (interface == NULL)
+    return NULL;
+
+  endpoints = g_array_new (FALSE, TRUE, sizeof (UsbemuEndpointEntry));
+
+  strv = *argv;
+  while (*strv != NULL) {
+    if (g_ascii_strcasecmp (*strv, "--endpoint") == 0) {
+      ++strv;
+
+      g_array_set_size (endpoints, endpoints->len + 1);
+      entry = &g_array_index (endpoints,
+                              UsbemuEndpointEntry, endpoints->len - 1);
+      if (_extract_endpoints_from_argv (&strv, entry, error))
+        continue;
+    } else if (allow_remaining && (**strv == '-')) {
+      break;
+    } else if (error != NULL) {
+      *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                            "unknown argument '%s'", *strv);
+    }
+
+    g_object_unref (interface);
+    interface = NULL;
+    break;
+  }
+  *argv = strv;
+
+  if ((interface != NULL) && (endpoints->len > 0))
+    usbemu_interface_add_endpoint_entries (interface,
+                                           (const UsbemuEndpointEntry*) endpoints->data);
+
+  g_array_free (endpoints, TRUE);
+
+  return interface;
+}
+
+/**
+ * usbemu_interface_new_from_argv:
+ * @argv: (in) (array zero-terminated=1): interface description.
+ * @error: (out) (optional): return location for error.
+ *
+ * Create #UsbemuInterface from tokenized command line string. See
+ * usbemu_device_new_from_string() for valid syntax.
+ *
+ * Returns: (transfer full): a newly created #UsbemuInterface object or
+ *          %NULL if failed.
+ */
+UsbemuInterface*
+usbemu_interface_new_from_argv (gchar  **argv,
+                                GError **error)
+{
+  g_return_val_if_fail ((argv != NULL), NULL);
+
+  return _usbemu_interface_new_from_argv_inner (&argv, error, FALSE);
+}
+
+/**
+ * usbemu_interface_new_from_string:
+ * @str: (in): command line like interface description.
+ * @error: (out) (optional): return location for error.
+ *
+ * Create #UsbemuInterface from a command line like formated string. See
+ * usbemu_device_new_from_string() for valid syntax.
+ *
+ * Returns: (transfer full): a newly created #UsbemuInterface object or %NULL if
+ *          failed.
+ */
+UsbemuInterface*
+usbemu_interface_new_from_string (const gchar  *str,
+                                  GError      **error)
+{
+  gint argc;
+  gchar **argv;
+  UsbemuInterface *interface;
+
+  g_return_val_if_fail ((str != NULL), NULL);
+
+  if (!g_shell_parse_argv (str, &argc, &argv, error))
+    return NULL;
+
+  interface = usbemu_interface_new_from_argv (argv, error);
+  g_strfreev (argv);
+
+  return interface;
+}
+
 /**
  * usbemu_interface_get_interface_number:
  * @interface: (in): a #UsbemuInterface object.
@@ -534,9 +744,15 @@ usbemu_interface_set_protocol (UsbemuInterface *interface,
 UsbemuConfiguration*
 usbemu_interface_get_configuration (UsbemuInterface *interface)
 {
+  UsbemuConfiguration *configuration;
+
   g_return_val_if_fail (USBEMU_IS_INTERFACE (interface), NULL);
 
-  return g_object_ref (USBEMU_INTERFACE_GET_PRIVATE (interface)->configuration);
+  configuration = USBEMU_INTERFACE_GET_PRIVATE (interface)->configuration;
+  if (configuration != NULL)
+    return g_object_ref (configuration);
+
+  return NULL;
 }
 
 /**

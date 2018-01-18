@@ -82,6 +82,86 @@ test_instanciation_new_full_1 (void)
 }
 
 static void
+test_instanciation_new_from_string_1 (void)
+{
+  const gchar* strings[] = {
+    "object-type=UsbemuInterface",
+    "object-type=UsbemuInterface --endpoint",
+    "object-type=UsbemuInterface --endpoint --endpoint",
+    "object-type=UsbemuInterface " USBEMU_INTERFACE_PROP_NAME "=my-name",
+    "object-type=UsbemuInterface " USBEMU_INTERFACE_PROP_NAME "=my-name --endpoint",
+    "object-type=UsbemuInterface --endpoint endpoint_number=USBEMU_EP_1",
+    "object-type=UsbemuInterface --endpoint endpoint_number=ep.1",
+    "object-type=UsbemuInterface --endpoint direction=USBEMU_ENDPOINT_DIRECTION_IN",
+    "object-type=UsbemuInterface --endpoint direction=in",
+    "object-type=UsbemuInterface --endpoint transfer=USBEMU_ENDPOINT_TRANSFER_ISOCHRONOUS",
+    "object-type=UsbemuInterface --endpoint transfer=isochronous",
+    "object-type=UsbemuInterface --endpoint attributes=none",
+    "object-type=UsbemuInterface --endpoint attributes=USBEMU_ENDPOINT_ISOCHRONOUS_SYNC_NONE",
+    "object-type=UsbemuInterface --endpoint attributes=data",
+    "object-type=UsbemuInterface --endpoint attributes=USBEMU_ENDPOINT_ISOCHRONOUS_USAGE_DATA",
+    "object-type=UsbemuInterface --endpoint attributes=none|data",
+    "object-type=UsbemuInterface --endpoint max_packet_size=3",
+    "object-type=UsbemuInterface --endpoint additional_transactions=2",
+    "object-type=UsbemuInterface --endpoint interval=8",
+  };
+  UsbemuInterface *interface;
+  GError *error = NULL;
+  gsize i;
+
+  for (i = 0; i < G_N_ELEMENTS (strings); i++) {
+    g_test_message ("testing: %s", strings[i]);
+    interface = usbemu_interface_new_from_string (strings[i], &error);
+    g_assert_nonnull (interface);
+    g_assert_true (USBEMU_IS_INTERFACE (interface));
+    g_assert_null (error);
+    g_object_unref (interface);
+  }
+}
+
+static void
+test_instanciation_new_from_string_2 (void)
+{
+  const struct {
+    gchar *description;
+    GQuark error_domain;
+    gint error_code;
+  } cases[] = {
+    { "", G_SHELL_ERROR, G_SHELL_ERROR_EMPTY_STRING },
+    { "object-type=NoSuchType",
+      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+    { "object-type=UsbemuInterface foo",
+      USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
+    { "object-type=UsbemuInterface foo=",
+      USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
+    { "object-type=UsbemuInterface =bar",
+      USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
+    { "object-type=UsbemuInterface foo=bar",
+      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+  };
+  UsbemuInterface *interface;
+  GError *error = NULL;
+  gsize i;
+
+  for (i = 0; i < G_N_ELEMENTS (cases); i++) {
+    g_test_message ("testing: %s", cases[i].description);
+    interface = usbemu_interface_new_from_string (cases[i].description, &error);
+    g_assert_null (interface);
+    if (cases[i].error_domain == 0)
+      g_assert_null (error);
+    else {
+      g_assert_nonnull (error);
+      g_test_message ("got error %s:%d",
+                      g_quark_to_string (error->domain), error->code);
+      g_assert_cmpint (error->domain, ==, cases[i].error_domain);
+      g_assert_cmpint (error->code, ==, cases[i].error_code);
+      g_error_free (error);
+      error = NULL;
+    }
+  }
+}
+
+static void
 test_properties_name_1 (void)
 {
   const gchar *names[] = {
@@ -220,6 +300,10 @@ main (int   argc,
                    test_instanciation_new_1);
   g_test_add_func ("/UsbemuInterface/instanciation/new-full",
                    test_instanciation_new_full_1);
+  g_test_add_func ("/UsbemuInterface/instanciation/new-from-string/1",
+                   test_instanciation_new_from_string_1);
+  g_test_add_func ("/UsbemuInterface/instanciation/new-from-string/2",
+                   test_instanciation_new_from_string_2);
 
   /* properties */
 

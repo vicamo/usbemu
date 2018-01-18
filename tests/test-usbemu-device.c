@@ -37,6 +37,73 @@ test_instanciation_new_1 (void)
 }
 
 static void
+test_instanciation_new_from_string_1 (void)
+{
+  const gchar* strings[] = {
+    "object-type=UsbemuDevice",
+    "object-type=UsbemuDevice --configuration",
+    "object-type=UsbemuDevice --configuration --configuration",
+    "object-type=UsbemuDevice --configuration --interface",
+    "object-type=UsbemuDevice --configuration --interface --interface",
+    "object-type=UsbemuDevice --configuration --interface --configuration",
+    "object-type=UsbemuDevice --configuration --interface --configuration --interface",
+  };
+  UsbemuDevice *device;
+  GError *error = NULL;
+  gsize i;
+
+  for (i = 0; i < G_N_ELEMENTS (strings); i++) {
+    device = usbemu_device_new_from_string (strings[i], &error);
+    g_assert_nonnull (device);
+    g_assert_true (USBEMU_IS_DEVICE (device));
+    g_assert_null (error);
+    g_object_unref (device);
+  }
+}
+
+static void
+test_instanciation_new_from_string_2 (void)
+{
+  const struct {
+    gchar *description;
+    GQuark error_domain;
+    gint error_code;
+  } cases[] = {
+    { "", G_SHELL_ERROR, G_SHELL_ERROR_EMPTY_STRING },
+    { "object-type=NoSuchType",
+      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+    { "object-type=UsbemuDevice name",
+      USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
+    { "object-type=UsbemuDevice name=",
+      USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
+    { "object-type=UsbemuDevice =value",
+      USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
+    { "object-type=UsbemuDevice name=value",
+      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+  };
+  UsbemuDevice *device;
+  GError *error = NULL;
+  gsize i;
+
+  for (i = 0; i < G_N_ELEMENTS (cases); i++) {
+    g_test_message ("testing: %s", cases[i].description);
+    device = usbemu_device_new_from_string (cases[i].description, &error);
+    g_assert_null (device);
+    if (cases[i].error_domain == 0)
+      g_assert_null (error);
+    else {
+      g_assert_nonnull (error);
+      g_test_message ("got error %s:%d",
+                      g_quark_to_string (error->domain), error->code);
+      g_assert_cmpint (error->domain, ==, cases[i].error_domain);
+      g_assert_cmpint (error->code, ==, cases[i].error_code);
+      g_error_free (error);
+      error = NULL;
+    }
+  }
+}
+
+static void
 test_properties_specification_num_1 (void)
 {
   UsbemuDevice *device;
@@ -276,6 +343,10 @@ main (int   argc,
 
   g_test_add_func ("/UsbemuDevice/instanciation/new",
                    test_instanciation_new_1);
+  g_test_add_func ("/UsbemuDevice/instanciation/new-from-string/1",
+                   test_instanciation_new_from_string_1);
+  g_test_add_func ("/UsbemuDevice/instanciation/new-from-string/2",
+                   test_instanciation_new_from_string_2);
 
   /* properties */
 

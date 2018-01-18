@@ -73,6 +73,71 @@ test_instanciation_new_full_1 (void)
 }
 
 static void
+test_instanciation_new_from_string_1 (void)
+{
+  const gchar* strings[] = {
+    USBEMU_CONFIGURATION_PROP_NAME "=my-name",
+    USBEMU_CONFIGURATION_PROP_ATTRIBUTES "=REMOTE_WAKEUP",
+    USBEMU_CONFIGURATION_PROP_ATTRIBUTES "=REMOTE_WAKEUP|SELF_POWER",
+    USBEMU_CONFIGURATION_PROP_NAME "=my-name " USBEMU_CONFIGURATION_PROP_ATTRIBUTES "=REMOTE_WAKEUP",
+    "--interface",
+    USBEMU_CONFIGURATION_PROP_NAME "=my-name --interface",
+    "--interface --interface",
+    "--interface --alternate-setting",
+    "--interface --alternate-setting --alternate-setting",
+    "--interface --alternate-setting --interface",
+    "--interface --alternate-setting --interface --alternate-setting",
+  };
+  UsbemuConfiguration *configuration;
+  GError *error = NULL;
+  gsize i;
+
+  for (i = 0; i < G_N_ELEMENTS (strings); i++) {
+    g_test_message ("testing: %s", strings[i]);
+    configuration = usbemu_configuration_new_from_string (strings[i], &error);
+    g_assert_nonnull (configuration);
+    g_assert_true (USBEMU_IS_CONFIGURATION (configuration));
+    g_assert_null (error);
+    g_object_unref (configuration);
+  }
+}
+
+static void
+test_instanciation_new_from_string_2 (void)
+{
+  const struct {
+    gchar *description;
+    GQuark error_domain;
+    gint error_code;
+  } cases[] = {
+    { "", G_SHELL_ERROR, G_SHELL_ERROR_EMPTY_STRING },
+    { "object-type=NoSuchType",
+      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+    { "object-type=UsbemuConfiguration",
+      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+  };
+  UsbemuConfiguration *configuration;
+  GError *error = NULL;
+  gsize i;
+
+  for (i = 0; i < G_N_ELEMENTS (cases); i++) {
+    g_test_message ("testing: %s", cases[i].description);
+    configuration = usbemu_configuration_new_from_string (cases[i].description, &error);
+    g_assert_null (configuration);
+    if (cases[i].error_domain == 0)
+      g_assert_null (error);
+    else {
+      g_assert_nonnull (error);
+      g_test_message ("got error %s:%d", g_quark_to_string (error->domain), error->code);
+      g_assert_cmpint (error->domain, ==, cases[i].error_domain);
+      g_assert_cmpint (error->code, ==, cases[i].error_code);
+      g_error_free (error);
+      error = NULL;
+    }
+  }
+}
+
+static void
 test_properties_name_1 (void)
 {
   const gchar *names[] = {
@@ -190,6 +255,10 @@ main (int   argc,
                    test_instanciation_new_1);
   g_test_add_func ("/UsbemuConfiguration/instanciation/new-full",
                    test_instanciation_new_full_1);
+  g_test_add_func ("/UsbemuConfiguration/instanciation/new-from-string/1",
+                   test_instanciation_new_from_string_1);
+  g_test_add_func ("/UsbemuConfiguration/instanciation/new-from-string/2",
+                   test_instanciation_new_from_string_2);
 
   /* properties */
 

@@ -135,4 +135,88 @@ gchar *
 /*** END value-tail ***/
 
 /*** BEGIN file-tail ***/
+
+/**
+ * usbemu_enum_get_value_by_name_or_nick:
+ * @type: #GType of target enum type.
+ * @str: (in): needle string.
+ *
+ * Convenient function to search both enum name and nick.
+ *
+ * Returns: (transfer none): #GEnumValue with specified name or nick, or %NULL
+ *          if not found.
+ */
+GEnumValue*
+usbemu_enum_get_value_by_name_or_nick (GType        type,
+                                       const gchar *str)
+{
+  GEnumClass *klass;
+  GEnumValue *value;
+
+  g_return_val_if_fail (G_TYPE_IS_ENUM (type), NULL);
+  g_return_val_if_fail ((str != NULL), NULL);
+
+  klass = g_type_class_ref (type);
+  g_assert_nonnull (klass);
+
+  value = g_enum_get_value_by_name (klass, str);
+  if (value == NULL)
+    value = g_enum_get_value_by_nick (klass, str);
+
+  g_type_class_unref (klass);
+  return value;
+}
+
+/**
+ * usbemu_flags_from_string:
+ * @type: #GType of target flags type.
+ * @str: (in): string made of multiple names or nicks combined with '|'.
+ * @out: (out) (optional): output flags with values of specified names or nicks
+ *     OR-ed.
+ *
+ * Get combined value from string. This is essentially the counter process of
+ * g_flags_to_string().
+ *
+ * Returns: %TRUE if succeeded, %FALSE otherwise.
+ */
+gboolean
+usbemu_flags_from_string (GType        type,
+                          const gchar *str,
+                          guint       *out)
+{
+  GFlagsClass *klass;
+  GFlagsValue *value;
+  guint flags = 0;
+  gchar **strv, **p;
+  gboolean ret = TRUE;
+
+  g_return_val_if_fail (G_TYPE_IS_FLAGS (type), FALSE);
+  g_return_val_if_fail ((str != NULL), FALSE);
+
+  if (*str == '\0')
+    return FALSE;
+
+  klass = g_type_class_ref (type);
+  p = strv = g_strsplit (str, "|", 0);
+
+  do {
+    value = g_flags_get_value_by_name (klass, *p);
+    if (value == NULL)
+      value = g_flags_get_value_by_nick (klass, *p);
+    if (value == NULL) {
+      ret = FALSE;
+      break;
+    }
+
+    flags |= value->value;
+  } while (*(++p) != NULL);
+
+  g_type_class_unref (klass);
+  g_strfreev (strv);
+
+  if (ret && (out != NULL))
+    *out = flags;
+
+  return ret;
+}
 /*** END file-tail ***/
