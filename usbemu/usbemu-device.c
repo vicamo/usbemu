@@ -287,8 +287,8 @@ _usbemu_device_new_from_argv_inner (gchar    ***argv,
       }
     } else if (allow_remaining && (**strv == '-')) {
       break;
-    } else if (error != NULL) {
-      g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+    } else {
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
                    "unknown argument %s", *strv);
     }
 

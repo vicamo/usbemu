@@ -103,10 +103,8 @@ _extract_properties_from_argv (gchar       ***argv,
 
     v = strchr (k, '=');
     if ((v == NULL) || (*(v + 1) == '\0') || (v == k)) {
-      if (error) {
-        *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
-                              "syntax error at '%s'", k);
-      }
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                   "syntax error at '%s'", k);
       ret = FALSE;
       break;
     }
@@ -115,11 +113,9 @@ _extract_properties_from_argv (gchar       ***argv,
     if ((type_key != NULL) && (g_ascii_strcasecmp (k, type_key) == 0)) {
       type = g_type_from_name (v);
       if ((type == 0) || !g_type_is_a (type, *base_type)) {
-        if (error != NULL) {
-          *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
-                                "invalid type name '%s' for base type %s",
-                                v, g_type_name (*base_type));
-        }
+        g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+                     "invalid type name '%s' for base type %s",
+                     v, g_type_name (*base_type));
         ret = FALSE;
         break;
       }
@@ -132,11 +128,8 @@ _extract_properties_from_argv (gchar       ***argv,
 
     pspec = g_object_class_find_property (klass, k);
     if (pspec == NULL) {
-      if (error != NULL) {
-        *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
-                              "no such property '%s' for type %s",
-                              k, g_type_name (type));
-      }
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+                   "no such property '%s' for type %s", k, g_type_name (type));
       ret = FALSE;
       break;
     }
@@ -151,11 +144,9 @@ _extract_properties_from_argv (gchar       ***argv,
 
     /* TODO: use g_value_transform? */
     if (!_transform_string_to_type (v, pspec->value_type, pvalue)) {
-      if (error != NULL) {
-        *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
-                              "invalid value '%s' for type %s",
-                              v, g_type_name (pspec->value_type));
-      }
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                   "invalid value '%s' for type %s",
+                   v, g_type_name (pspec->value_type));
       ret = FALSE;
       break;
     }
@@ -200,11 +191,9 @@ _usbemu_object_new_from_argv (gchar       ***argv,
                                            (const gchar**) keys->data,
                                            (GValue*) values->data);
     if (object == NULL) {
-      if (error != NULL) {
-        *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
-                              "failed to create device instance of type %s",
-                              g_type_name (*base_type));
-      }
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+                   "failed to create device instance of type %s",
+                   g_type_name (*base_type));
     }
   }
 

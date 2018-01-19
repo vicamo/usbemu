@@ -309,9 +309,9 @@ _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
       }
     } else if (allow_remaining && (**strv == '-')) {
       break;
-    } else if (error != NULL) {
-      *error = g_error_new (USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
-                            "unknown argument '%s'", *strv);
+    } else {
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR,
+                   "unknown argument '%s'", *strv);
     }
 
     g_object_unref (configuration);
