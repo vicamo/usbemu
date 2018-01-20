@@ -22,6 +22,7 @@
 #endif
 
 #include <glib-object.h>
+#include <gio/gio.h>
 
 G_BEGIN_DECLS
 
@@ -64,6 +65,15 @@ struct _UsbemuDeviceClass {
 
   void (*attached) (UsbemuDevice *device);
   void (*detached) (UsbemuDevice *device);
+
+  /* virtual methods */
+
+  void (*attach_async) (UsbemuDevice  *device,
+                        GTask         *task,
+                        gchar        **options);
+  void (*detach_async) (UsbemuDevice  *device,
+                        GTask         *task,
+                        gchar        **options);
 
   /*< private >*/
 
@@ -195,7 +205,23 @@ UsbemuDevice* usbemu_device_new_from_argv   (gchar       **argv,
 UsbemuDevice* usbemu_device_new_from_string (const gchar  *str,
                                              GError      **error);
 
-gboolean usbemu_device_get_attached (UsbemuDevice *device);
+gboolean usbemu_device_get_attached  (UsbemuDevice         *device);
+void     usbemu_device_attach        (UsbemuDevice         *device,
+                                      gchar               **options,
+                                      GCancellable         *cancellable,
+                                      GAsyncReadyCallback   callback,
+                                      gpointer              user_data);
+gboolean usbemu_device_attach_finish (UsbemuDevice         *device,
+                                      GAsyncResult         *result,
+                                      GError              **error);
+void     usbemu_device_detach        (UsbemuDevice         *device,
+                                      gchar               **options,
+                                      GCancellable         *cancellable,
+                                      GAsyncReadyCallback   callback,
+                                      gpointer              user_data);
+gboolean usbemu_device_detach_finish (UsbemuDevice         *device,
+                                      GAsyncResult         *result,
+                                      GError               **error);
 
 guint16       usbemu_device_get_specification_num (UsbemuDevice  *device);
 void          usbemu_device_set_specification_num (UsbemuDevice  *device,

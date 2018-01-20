@@ -52,6 +52,8 @@
  * @parent_class: The parent class.
  * @attached: attached signal hook.
  * @detached: detached signal hook.
+ * @attach_async: virtual method for asynchronous device attach operation.
+ * @detach_async: virtual method for asynchronous device detach operation.
  *
  * Class structure for UsbemuDevice.
  */
@@ -384,6 +386,112 @@ usbemu_device_get_attached (UsbemuDevice *device)
   g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
 
   return USBEMU_DEVICE_GET_PRIVATE (device)->attached;
+}
+
+/**
+ * usbemu_device_attach:
+ * @device: (in): a #UsbemuDevice object.
+ * @options: (in) (optional) (array zero-terminated=1): extra information passed
+ *           for command line as string-array.
+ * @cancellable: (in) (optional): a #GCancellable or %NULL.
+ * @callback: (scope async): a #GAsyncReadyCallback.
+ * @user_data: (closure): user data for the callback.
+ *
+ * Asynchronously attach the device with specified options. Use
+ * usbemu_device_attach_finish() to retrieve the result.
+ */
+void
+usbemu_device_attach (UsbemuDevice         *device,
+                      gchar               **options,
+                      GCancellable         *cancellable,
+                      GAsyncReadyCallback   callback,
+                      gpointer              user_data)
+{
+  GTask *task;
+  UsbemuDeviceClass *klass;
+
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  task = g_task_new (device, cancellable, callback, user_data);
+  klass = (UsbemuDeviceClass*) G_OBJECT_GET_CLASS (device);
+  if (klass->attach_async != NULL)
+    klass->attach_async (device, task, options);
+  else
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                             "attach operation not supported.");
+}
+
+/**
+ * usbemu_device_attach_finish:
+ * @device: (in): a #UsbemuDevice object.
+ * @result: (in): the #GAsyncResult.
+ * @error: (out): #GError for error reporting, or %NULL to ignore.
+ *
+ * Gets the result of a usbemu_device_attach() call.
+ *
+ * Returns: %TRUE if the attachment has been done successfully, %FALSE on error.
+ */
+gboolean
+usbemu_device_attach_finish (UsbemuDevice         *device,
+                             GAsyncResult         *result,
+                             GError              **error)
+{
+  g_return_val_if_fail (g_task_is_valid (result, device), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
+}
+
+/**
+ * usbemu_device_detach:
+ * @device: (in): a #UsbemuDevice object.
+ * @options: (in) (optional) (array zero-terminated=1): extra information passed
+ *           for command line as string-array.
+ * @cancellable: (in) (optional): a #GCancellable or %NULL.
+ * @callback: (scope async): a #GAsyncReadyCallback.
+ * @user_data: (closure): user data for the callback.
+ *
+ * Asynchronously detach the device with specified options. Use
+ * usbemu_device_detach_finish() to retrieve the result.
+ */
+void
+usbemu_device_detach (UsbemuDevice         *device,
+                      gchar               **options,
+                      GCancellable         *cancellable,
+                      GAsyncReadyCallback   callback,
+                      gpointer              user_data)
+{
+  GTask *task;
+  UsbemuDeviceClass *klass;
+
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+
+  task = g_task_new (device, cancellable, callback, user_data);
+  klass = (UsbemuDeviceClass*) G_OBJECT_GET_CLASS (device);
+  if (klass->detach_async != NULL)
+    klass->detach_async (device, task, options);
+  else
+    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                             "detach operation not supported.");
+}
+
+/**
+ * usbemu_device_detach_finish:
+ * @device: (in): a #UsbemuDevice object.
+ * @result: (in): the #GAsyncResult.
+ * @error: (out): #GError for error reporting, or %NULL to ignore.
+ *
+ * Gets the result of a usbemu_device_detach() call.
+ *
+ * Returns: %TRUE if the detachment has been done successfully, %FALSE on error.
+ */
+gboolean
+usbemu_device_detach_finish (UsbemuDevice         *device,
+                             GAsyncResult         *result,
+                             GError               **error)
+{
+  g_return_val_if_fail (g_task_is_valid (result, device), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }
 
 void
