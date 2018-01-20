@@ -66,6 +66,20 @@ _transform_string_to_type (gchar  *str,
   return FALSE;
 }
 
+static gpointer
+_ensure_types_inner (gpointer data G_GNUC_UNUSED)
+{
+  return NULL;
+}
+
+static void
+_ensure_types ()
+{
+  static GOnce once = G_ONCE_INIT;
+
+  g_once (&once, _ensure_types_inner, NULL);
+}
+
 /* _extract_properties_from_argv:
  * @argv: (inout) (array zero-terminated=1):
  * @base_type: (inout):
@@ -111,6 +125,9 @@ _extract_properties_from_argv (gchar       ***argv,
 
     *v = '\0'; ++v;
     if ((type_key != NULL) && (g_ascii_strcasecmp (k, type_key) == 0)) {
+      /* ensure all instanciable types have been registered. */
+      _ensure_types ();
+
       type = g_type_from_name (v);
       if ((type == 0) || !g_type_is_a (type, *base_type)) {
         g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
