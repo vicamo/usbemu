@@ -123,6 +123,7 @@ _extract_properties_from_argv (gchar       ***argv,
       g_type_class_unref (klass);
       klass = g_type_class_ref (type);
       g_assert_nonnull (klass);
+      *base_type = type;
       continue;
     }
 
