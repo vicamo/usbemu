@@ -30,6 +30,7 @@ G_BEGIN_DECLS
  * @USBEMU_ERROR_FAILED: unknown or unclassified failure.
  * @USBEMU_ERROR_INSTANCIATION_FAILED: failed to create gobject.
  * @USBEMU_ERROR_SYNTAX_ERROR: syntax error on inputs.
+ * @USBEMU_ERROR_NOT_SUPPORTED: operation not supported.
  *
  * Errors used in usbemu library.
  */
@@ -37,6 +38,7 @@ typedef enum { /*< underscore_name=usbemu_error >*/
   USBEMU_ERROR_FAILED = 0, /*< nick=Failed >*/
   USBEMU_ERROR_INSTANCIATION_FAILED, /*< nick=InstanciationFailed >*/
   USBEMU_ERROR_SYNTAX_ERROR, /*< nick=SyntaxError >*/
+  USBEMU_ERROR_NOT_SUPPORTED, /*< nick=NotSupported >*/
 } UsbemuError;
 
 /**

@@ -417,7 +417,7 @@ usbemu_device_attach (UsbemuDevice         *device,
   if (klass->attach_async != NULL)
     klass->attach_async (device, task, options);
   else
-    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+    g_task_return_new_error (task, USBEMU_ERROR, USBEMU_ERROR_NOT_SUPPORTED,
                              "attach operation not supported.");
 }
 
@@ -470,7 +470,7 @@ usbemu_device_detach (UsbemuDevice         *device,
   if (klass->detach_async != NULL)
     klass->detach_async (device, task, options);
   else
-    g_task_return_new_error (task, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+    g_task_return_new_error (task, USBEMU_ERROR, USBEMU_ERROR_NOT_SUPPORTED,
                              "detach operation not supported.");
 }
 
