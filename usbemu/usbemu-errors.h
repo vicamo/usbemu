@@ -28,7 +28,6 @@ G_BEGIN_DECLS
 /**
  * UsbemuError:
  * @USBEMU_ERROR_FAILED: unknown or unclassified failure.
- * @USBEMU_ERROR_DEVICE_UNAVAILABLE: device unavailable.
  * @USBEMU_ERROR_INSTANCIATION_FAILED: failed to create gobject.
  * @USBEMU_ERROR_SYNTAX_ERROR: syntax error on inputs.
  *
@@ -36,7 +35,6 @@ G_BEGIN_DECLS
  */
 typedef enum { /*< underscore_name=usbemu_error >*/
   USBEMU_ERROR_FAILED = 0, /*< nick=Failed >*/
-  USBEMU_ERROR_DEVICE_UNAVAILABLE, /*< nick=DeviceUnavailable >*/
   USBEMU_ERROR_INSTANCIATION_FAILED, /*< nick=InstanciationFailed >*/
   USBEMU_ERROR_SYNTAX_ERROR, /*< nick=SyntaxError >*/
 } UsbemuError;
