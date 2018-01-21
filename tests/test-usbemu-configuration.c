@@ -113,9 +113,9 @@ test_instanciation_new_from_string_2 (void)
     gint error_code;
   } cases[] = {
     { "object-type=NoSuchType",
-      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+      USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE },
     { "object-type=UsbemuConfiguration",
-      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+      USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE },
   };
   UsbemuConfiguration *configuration;
   GError *error = NULL;

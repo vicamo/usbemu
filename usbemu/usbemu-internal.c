@@ -130,7 +130,7 @@ _extract_properties_from_argv (gchar       ***argv,
 
       type = g_type_from_name (v);
       if ((type == 0) || !g_type_is_a (type, *base_type)) {
-        g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+        g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE,
                      "invalid type name '%s' for base type %s",
                      v, g_type_name (*base_type));
         ret = FALSE;
@@ -146,7 +146,7 @@ _extract_properties_from_argv (gchar       ***argv,
 
     pspec = g_object_class_find_property (klass, k);
     if (pspec == NULL) {
-      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE,
                    "no such property '%s' for type %s", k, g_type_name (type));
       ret = FALSE;
       break;
@@ -204,7 +204,7 @@ _usbemu_object_new_from_argv (gchar       ***argv,
   if ((*argv == NULL) || (**argv == NULL)) {
     object = g_object_new (*base_type, NULL);
     if (object == NULL) {
-      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE,
                    "failed to create device instance of type %s",
                    g_type_name (*base_type));
     }
@@ -222,7 +222,7 @@ _usbemu_object_new_from_argv (gchar       ***argv,
                                            (const gchar**) keys->data,
                                            (GValue*) values->data);
     if (object == NULL) {
-      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE,
                    "failed to create device instance of type %s",
                    g_type_name (*base_type));
     }

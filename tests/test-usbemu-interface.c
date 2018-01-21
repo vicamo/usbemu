@@ -131,7 +131,7 @@ test_instanciation_new_from_string_2 (void)
     gint error_code;
   } cases[] = {
     { "object-type=NoSuchType",
-      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+      USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE },
     { "object-type=UsbemuInterface foo",
       USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
     { "object-type=UsbemuInterface foo=",
@@ -139,7 +139,7 @@ test_instanciation_new_from_string_2 (void)
     { "object-type=UsbemuInterface =bar",
       USBEMU_ERROR, USBEMU_ERROR_SYNTAX_ERROR },
     { "object-type=UsbemuInterface foo=bar",
-      USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
+      USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE },
   };
   UsbemuInterface *interface;
   GError *error = NULL;

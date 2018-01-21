@@ -167,7 +167,7 @@ test_object_new_from_argv__object_type (void)
     } else {
       check_object_and_cleanup (object, base_type, &error,
                                 cases[i].base_type, USBEMU_ERROR,
-                                USBEMU_ERROR_INSTANCIATION_FAILED);
+                                USBEMU_ERROR_INVALID_TYPE);
     }
 
     g_strfreev (strv_keep);
