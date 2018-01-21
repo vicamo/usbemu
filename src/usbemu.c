@@ -31,7 +31,7 @@ static gboolean opt_debug = FALSE;
 static gboolean opt_version = FALSE;
 static gchar **opt_definitions = NULL;
 
-static GOptionEntry entries[] =
+static GOptionEntry main_entries[] =
 {
   { "background", 'D', G_OPTION_FLAG_NONE, G_OPTION_ARG_NONE, &opt_background,
     "Run in the background", NULL },
@@ -44,16 +44,57 @@ static GOptionEntry entries[] =
   { NULL }
 };
 
+static enum {
+  ACTION_NONE,
+  ACTION_ATTACH,
+  ACTION_DETACH,
+} opt_action = ACTION_NONE;
+static gchar **opt_action_options = NULL;
+
+static gboolean
+parse_arg_attach (const gchar  *option_name,
+                  const gchar  *value,
+                  gpointer      data,
+                   GError     **error)
+{
+  if (opt_action != ACTION_NONE) {
+    g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,
+                 "conflicting actions for %s", option_name);
+    return FALSE;
+  }
+
+  opt_action = (option_name[2] == 'a') ? ACTION_ATTACH : ACTION_DETACH;
+  opt_action_options = g_strsplit ((value == NULL) ? "" : value, ",", 0);
+  return TRUE;
+}
+
+static GOptionEntry action_entries[] =
+{
+  { "attach", '\0', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK,
+    parse_arg_attach,
+    "Attach device with comma-separated options", "<options>" },
+  { "detach", '\0', G_OPTION_FLAG_OPTIONAL_ARG, G_OPTION_ARG_CALLBACK,
+    parse_arg_attach,
+    "Detach device with comma-separated options", "<options>" },
+  { NULL }
+};
+
 static void
 parse_arg (int   *argc,
            char **argv[])
 {
   GOptionContext *context;
+  GOptionGroup *group;
   GError *error = NULL;
 
   context = g_option_context_new ("- USB emulation tool");
-  g_option_context_add_main_entries (context, entries, NULL);
+  g_option_context_add_main_entries (context, main_entries, NULL);
   g_option_context_set_help_enabled (context, TRUE);
+
+  group = g_option_group_new ("actions", "Actions:", "Action options",
+                              NULL, NULL);
+  g_option_group_add_entries (group, action_entries);
+  g_option_context_add_group (context, group);
 
   if (!g_option_context_parse (context, argc, argv, &error)) {
     if (error != NULL) {
@@ -90,6 +131,49 @@ parse_arg (int   *argc,
   }
 }
 
+static void
+device_attach_callback (UsbemuDevice *device,
+                        GAsyncResult *result,
+                        gpointer      user_data G_GNUC_UNUSED)
+{
+  GError *error = NULL;
+
+  if (!usbemu_device_attach_finish (device, result, &error)) {
+    g_printerr ("Failed to attach device %04x:%04x, %s\n",
+                usbemu_device_get_vendor_id (device),
+                usbemu_device_get_product_id (device),
+                error->message);
+    g_main_loop_quit (main_loop);
+    return;
+  }
+
+  /* TODO: */
+  g_idle_add ((GSourceFunc) g_main_loop_quit, main_loop);
+}
+
+static void
+device_detach_callback (UsbemuDevice *device,
+                        GAsyncResult *result,
+                        gpointer      user_data G_GNUC_UNUSED)
+{
+  GError *error = NULL;
+  gboolean ret;
+
+  ret = usbemu_device_detach_finish (device, result, &error);
+  if (ret) {
+    g_print ("Device %04x:%04x detached.\n",
+             usbemu_device_get_vendor_id (device),
+             usbemu_device_get_product_id (device));
+  } else {
+    g_printerr ("Failed to detach device %04x:%04x, %s\n",
+                usbemu_device_get_vendor_id (device),
+                usbemu_device_get_product_id (device),
+                error->message);
+  }
+
+  g_idle_add ((GSourceFunc) g_main_loop_quit, main_loop);
+}
+
 int
 main (int   argc,
       char *argv[])
@@ -98,6 +182,11 @@ main (int   argc,
   GError *error = NULL;
 
   parse_arg (&argc, &argv);
+
+  if (opt_action == ACTION_NONE) {
+    g_print ("No action to take. Quit.\n");
+    exit (0);
+  }
 
   device = usbemu_device_new_from_argv (opt_definitions, &error);
   if (device == NULL) {
@@ -117,11 +206,26 @@ main (int   argc,
            usbemu_device_get_product_id (device));
 
   main_loop = g_main_loop_new (NULL, FALSE);
-  g_idle_add ((GSourceFunc) g_main_loop_quit, main_loop);
+  if (opt_action == ACTION_ATTACH) {
+    usbemu_device_attach (device, opt_action_options, NULL,
+                          (GAsyncReadyCallback) device_attach_callback, NULL);
+  } else {
+    usbemu_device_detach (device, opt_action_options, NULL,
+                          (GAsyncReadyCallback) device_detach_callback, NULL);
+  }
 
   g_main_loop_run (main_loop);
 
+  while (g_main_context_pending (NULL)) {
+    if (!g_main_context_iteration (NULL, FALSE))
+      break;
+  }
+
   g_object_unref (device);
+  if (opt_action_options != NULL)
+    g_strfreev (opt_action_options);
+  if (opt_definitions != NULL)
+    g_strfreev (opt_definitions);
 
   return 0;
 }
