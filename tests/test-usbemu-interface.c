@@ -85,25 +85,28 @@ static void
 test_instanciation_new_from_string_1 (void)
 {
   const gchar* strings[] = {
+    NULL,
+    "",
     "object-type=UsbemuInterface",
+    "--endpoint",
     "object-type=UsbemuInterface --endpoint",
-    "object-type=UsbemuInterface --endpoint --endpoint",
-    "object-type=UsbemuInterface " USBEMU_INTERFACE_PROP_NAME "=my-name",
-    "object-type=UsbemuInterface " USBEMU_INTERFACE_PROP_NAME "=my-name --endpoint",
-    "object-type=UsbemuInterface --endpoint endpoint_number=USBEMU_EP_1",
-    "object-type=UsbemuInterface --endpoint endpoint_number=ep.1",
-    "object-type=UsbemuInterface --endpoint direction=USBEMU_ENDPOINT_DIRECTION_IN",
-    "object-type=UsbemuInterface --endpoint direction=in",
-    "object-type=UsbemuInterface --endpoint transfer=USBEMU_ENDPOINT_TRANSFER_ISOCHRONOUS",
-    "object-type=UsbemuInterface --endpoint transfer=isochronous",
-    "object-type=UsbemuInterface --endpoint attributes=none",
-    "object-type=UsbemuInterface --endpoint attributes=USBEMU_ENDPOINT_ISOCHRONOUS_SYNC_NONE",
-    "object-type=UsbemuInterface --endpoint attributes=data",
-    "object-type=UsbemuInterface --endpoint attributes=USBEMU_ENDPOINT_ISOCHRONOUS_USAGE_DATA",
-    "object-type=UsbemuInterface --endpoint attributes=none|data",
-    "object-type=UsbemuInterface --endpoint max_packet_size=3",
-    "object-type=UsbemuInterface --endpoint additional_transactions=2",
-    "object-type=UsbemuInterface --endpoint interval=8",
+    "--endpoint --endpoint",
+    "" USBEMU_INTERFACE_PROP_NAME "=my-name",
+    "" USBEMU_INTERFACE_PROP_NAME "=my-name --endpoint",
+    "--endpoint endpoint_number=USBEMU_EP_1",
+    "--endpoint endpoint_number=ep.1",
+    "--endpoint direction=USBEMU_ENDPOINT_DIRECTION_IN",
+    "--endpoint direction=in",
+    "--endpoint transfer=USBEMU_ENDPOINT_TRANSFER_ISOCHRONOUS",
+    "--endpoint transfer=isochronous",
+    "--endpoint attributes=none",
+    "--endpoint attributes=USBEMU_ENDPOINT_ISOCHRONOUS_SYNC_NONE",
+    "--endpoint attributes=data",
+    "--endpoint attributes=USBEMU_ENDPOINT_ISOCHRONOUS_USAGE_DATA",
+    "--endpoint attributes=none|data",
+    "--endpoint max_packet_size=3",
+    "--endpoint additional_transactions=2",
+    "--endpoint interval=8",
   };
   UsbemuInterface *interface;
   GError *error = NULL;
@@ -127,7 +130,6 @@ test_instanciation_new_from_string_2 (void)
     GQuark error_domain;
     gint error_code;
   } cases[] = {
-    { "", G_SHELL_ERROR, G_SHELL_ERROR_EMPTY_STRING },
     { "object-type=NoSuchType",
       USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
     { "object-type=UsbemuInterface foo",

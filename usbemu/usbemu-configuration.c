@@ -283,6 +283,9 @@ _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
   if (configuration == NULL)
     return NULL;
 
+  if (*argv == NULL)
+    return configuration;
+
   interfaces = g_array_new (TRUE, TRUE, sizeof (UsbemuInterface*));
   g_array_set_clear_func (interfaces,
                           (GDestroyNotify) _usbemu_object_unref_dereferenced);
@@ -332,11 +335,14 @@ _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
 
 /**
  * usbemu_configuration_new_from_argv:
- * @argv: (in) (array zero-terminated=1): configuration description.
+ * @argv: (in) (optional) (array zero-terminated=1): configuration description.
  * @error: (out) (optional): return location for error.
  *
  * Create #UsbemuConfiguration from tokenized command line string. See
  * usbemu_device_new_from_string() for valid syntax.
+ *
+ * A generic interface object is created when %NULL or an empty strv is
+ * passed.
  *
  * Returns: (transfer full): a newly created #UsbemuConfiguration object or
  *          %NULL if failed.
@@ -345,18 +351,19 @@ UsbemuConfiguration*
 usbemu_configuration_new_from_argv (gchar  **argv,
                                     GError **error)
 {
-  g_return_val_if_fail ((argv != NULL), NULL);
-
   return _usbemu_configuration_new_from_argv_inner (&argv, error, FALSE);
 }
 
 /**
  * usbemu_configuration_new_from_string:
- * @str: (in): command line like configuration description.
+ * @str: (in) (optional): command line like configuration description.
  * @error: (out) (optional): return location for error.
  *
  * Create #UsbemuConfiguration from a command line like formated string. See
  * usbemu_device_new_from_string() for valid syntax.
+ *
+ * A generic configuration object is created when %NULL or an empty string is
+ * passed.
  *
  * Returns: (transfer full): a newly created #UsbemuConfiguration object or
  *          %NULL if failed.
@@ -369,7 +376,10 @@ usbemu_configuration_new_from_string (const gchar  *str,
   gchar **argv;
   UsbemuConfiguration *configuration;
 
-  g_return_val_if_fail ((str != NULL), NULL);
+  /* g_shell_parse_argv() returns error upon empty input string, but we'd like
+   * to create a generic object instead. */
+  if ((str == NULL) || (*str == '\0'))
+    return usbemu_configuration_new ();
 
   if (!g_shell_parse_argv (str, &argc, &argv, error))
     return NULL;

@@ -40,13 +40,16 @@ static void
 test_instanciation_new_from_string_1 (void)
 {
   const gchar* strings[] = {
+    NULL,
+    "",
     "object-type=UsbemuDevice",
+    "--configuration",
     "object-type=UsbemuDevice --configuration",
-    "object-type=UsbemuDevice --configuration --configuration",
-    "object-type=UsbemuDevice --configuration --interface",
-    "object-type=UsbemuDevice --configuration --interface --interface",
-    "object-type=UsbemuDevice --configuration --interface --configuration",
-    "object-type=UsbemuDevice --configuration --interface --configuration --interface",
+    "--configuration --configuration",
+    "--configuration --interface",
+    "--configuration --interface --interface",
+    "--configuration --interface --configuration",
+    "--configuration --interface --configuration --interface",
   };
   UsbemuDevice *device;
   GError *error = NULL;
@@ -69,7 +72,6 @@ test_instanciation_new_from_string_2 (void)
     GQuark error_domain;
     gint error_code;
   } cases[] = {
-    { "", G_SHELL_ERROR, G_SHELL_ERROR_EMPTY_STRING },
     { "object-type=NoSuchType",
       USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
     { "object-type=UsbemuDevice name",

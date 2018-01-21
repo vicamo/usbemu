@@ -272,6 +272,9 @@ _usbemu_device_new_from_argv_inner (gchar    ***argv,
   if (device == NULL)
     return NULL;
 
+  if (*argv == NULL)
+    return device;
+
   strv = *argv;
   while (*strv != NULL) {
     if (g_ascii_strcasecmp (*strv, "--configuration") == 0) {
@@ -303,11 +306,14 @@ _usbemu_device_new_from_argv_inner (gchar    ***argv,
 
 /**
  * usbemu_device_new_from_argv:
- * @argv: (in) (array zero-terminated=1): device description.
+ * @argv: (in) (optional) (array zero-terminated=1): device description.
  * @error: (out) (optional): return location for error.
  *
  * Create #UsbemuDevice from tokenized command line string. See
  * usbemu_device_new_from_string() for valid syntax.
+ *
+ * A generic interface object is created when %NULL or an empty strv is
+ * passed.
  *
  * Returns: (transfer full): a newly created #UsbemuDevice object or %NULL if
  *          failed.
@@ -316,14 +322,12 @@ UsbemuDevice*
 usbemu_device_new_from_argv (gchar  **argv,
                              GError **error)
 {
-  g_return_val_if_fail ((argv != NULL), NULL);
-
   return _usbemu_device_new_from_argv_inner (&argv, error, FALSE);
 }
 
 /**
  * usbemu_device_new_from_string:
- * @str: (in): command line like device description.
+ * @str: (in) (optional): command line like device description.
  * @error: (out) (optional): return location for error.
  *
  * Create #UsbemuDevice from a command line like formated string. Valid syntax
@@ -338,6 +342,9 @@ usbemu_device_new_from_argv (gchar  **argv,
  *      ]...]
  *    ]..]
  * ]|
+ *
+ * A generic device object is created when %NULL or an empty string is passed.
+ *
  * Returns: (transfer full): a newly created #UsbemuDevice object or %NULL if
  *          failed.
  */
@@ -349,7 +356,10 @@ usbemu_device_new_from_string (const gchar  *str,
   gchar **argv;
   UsbemuDevice *device;
 
-  g_return_val_if_fail ((str != NULL), NULL);
+  /* g_shell_parse_argv() returns error upon empty input string, but we'd like
+   * to create a generic object instead. */
+  if ((str == NULL) || (*str == '\0'))
+    return usbemu_device_new ();
 
   if (!g_shell_parse_argv (str, &argc, &argv, error))
     return NULL;

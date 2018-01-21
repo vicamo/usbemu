@@ -83,7 +83,7 @@ _ensure_types ()
 /* _extract_properties_from_argv:
  * @argv: (inout) (array zero-terminated=1):
  * @base_type: (inout):
- * @type_key: (in):
+ * @type_key: (in) (optional):
  * @keys: (out caller-allocates) (type GArray(gchar)):
  * @values: (out caller-allocates) (type GArray(GValue)):
  * @error: (out callee-allocates) (optional):
@@ -197,6 +197,19 @@ _usbemu_object_new_from_argv (gchar       ***argv,
   GArray *keys;
   GArray *values;
   GObject *object = NULL;
+
+  g_assert_nonnull (argv);
+  g_assert_nonnull (base_type);
+
+  if ((*argv == NULL) || (**argv == NULL)) {
+    object = g_object_new (*base_type, NULL);
+    if (object == NULL) {
+      g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED,
+                   "failed to create device instance of type %s",
+                   g_type_name (*base_type));
+    }
+    return object;
+  }
 
   keys = g_array_new (FALSE, TRUE, sizeof (gchar*));
   values = g_array_new (FALSE, TRUE, sizeof (GValue));

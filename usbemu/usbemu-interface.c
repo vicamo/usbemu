@@ -482,6 +482,9 @@ _usbemu_interface_new_from_argv_inner (gchar    ***argv,
   if (interface == NULL)
     return NULL;
 
+  if (*argv == NULL)
+    return interface;
+
   endpoints = g_array_new (FALSE, TRUE, sizeof (UsbemuEndpointEntry));
 
   strv = *argv;
@@ -518,11 +521,14 @@ _usbemu_interface_new_from_argv_inner (gchar    ***argv,
 
 /**
  * usbemu_interface_new_from_argv:
- * @argv: (in) (array zero-terminated=1): interface description.
+ * @argv: (in) (optional) (array zero-terminated=1): interface description.
  * @error: (out) (optional): return location for error.
  *
  * Create #UsbemuInterface from tokenized command line string. See
  * usbemu_device_new_from_string() for valid syntax.
+ *
+ * A generic interface object is created when %NULL or an empty strv is
+ * passed.
  *
  * Returns: (transfer full): a newly created #UsbemuInterface object or
  *          %NULL if failed.
@@ -531,18 +537,19 @@ UsbemuInterface*
 usbemu_interface_new_from_argv (gchar  **argv,
                                 GError **error)
 {
-  g_return_val_if_fail ((argv != NULL), NULL);
-
   return _usbemu_interface_new_from_argv_inner (&argv, error, FALSE);
 }
 
 /**
  * usbemu_interface_new_from_string:
- * @str: (in): command line like interface description.
+ * @str: (in) (optional): command line like interface description.
  * @error: (out) (optional): return location for error.
  *
  * Create #UsbemuInterface from a command line like formated string. See
  * usbemu_device_new_from_string() for valid syntax.
+ *
+ * A generic interface object is created when %NULL or an empty string is
+ * passed.
  *
  * Returns: (transfer full): a newly created #UsbemuInterface object or %NULL if
  *          failed.
@@ -555,7 +562,10 @@ usbemu_interface_new_from_string (const gchar  *str,
   gchar **argv;
   UsbemuInterface *interface;
 
-  g_return_val_if_fail ((str != NULL), NULL);
+  /* g_shell_parse_argv() returns error upon empty input string, but we'd like
+   * to create a generic object instead. */
+  if ((str == NULL) || (*str == '\0'))
+    return usbemu_interface_new ();
 
   if (!g_shell_parse_argv (str, &argc, &argv, error))
     return NULL;

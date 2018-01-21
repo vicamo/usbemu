@@ -99,11 +99,6 @@ main (int   argc,
 
   parse_arg (&argc, &argv);
 
-  if (opt_definitions == NULL || *opt_definitions == NULL) {
-    g_printerr ("No emulated device definition available. Quit.\n");
-    exit (1);
-  }
-
   device = usbemu_device_new_from_argv (opt_definitions, &error);
   if (device == NULL) {
     if (error != NULL) {

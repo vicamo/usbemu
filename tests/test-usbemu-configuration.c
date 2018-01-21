@@ -76,6 +76,8 @@ static void
 test_instanciation_new_from_string_1 (void)
 {
   const gchar* strings[] = {
+    NULL,
+    "",
     USBEMU_CONFIGURATION_PROP_NAME "=my-name",
     USBEMU_CONFIGURATION_PROP_ATTRIBUTES "=REMOTE_WAKEUP",
     USBEMU_CONFIGURATION_PROP_ATTRIBUTES "=REMOTE_WAKEUP|SELF_POWER",
@@ -110,7 +112,6 @@ test_instanciation_new_from_string_2 (void)
     GQuark error_domain;
     gint error_code;
   } cases[] = {
-    { "", G_SHELL_ERROR, G_SHELL_ERROR_EMPTY_STRING },
     { "object-type=NoSuchType",
       USBEMU_ERROR, USBEMU_ERROR_INSTANCIATION_FAILED },
     { "object-type=UsbemuConfiguration",
