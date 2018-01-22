@@ -62,17 +62,10 @@ typedef struct  _UsbemuVhciDevicePrivate {
   guint32 devid;
   guint port;
 
-  struct {
-    GSocketConnection *connection;
-    struct {
-      GInputStream *stream;
-      GCancellable *cancellable;
-    } in;
-    struct {
-      GOutputStream *stream;
-      GCancellable *cancellable;
-    } out;
-  }; /* server side connection related fields */
+  GSocketConnection *connection;
+  GInputStream *istream;
+  GOutputStream *ostream;
+  GCancellable *cancellable;
 } UsbemuVhciDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuVhciDevice, usbemu_vhci_device,
@@ -99,7 +92,6 @@ static void object_class_get_property (GObject *object, guint prop_id,
                                        GValue *value, GParamSpec *pspec);
 /* virtual methods for UsbemuDeviceClass */
 static void device_class_attached (UsbemuDevice *device);
-static void device_class_detached (UsbemuDevice *device);
 static void device_class_attach_async (UsbemuDevice *device,
                                        GTask *task, gchar **options);
 static void device_class_detach_async (UsbemuDevice *device,
@@ -108,6 +100,9 @@ static void device_class_detach_async (UsbemuDevice *device,
 static void usbemu_vhci_device_class_init (UsbemuVhciDeviceClass *klass);
 static void usbemu_vhci_device_init (UsbemuVhciDevice *vhci_device);
 /* internal callbacks */
+static void _on_istream_fill_callback (GBufferedInputStream *istream,
+                                       GAsyncResult         *result,
+                                       UsbemuVhciDevice     *vhci_device);
 static void _setup_connections_for_attach (GTask *task);
 
 static void
@@ -151,6 +146,22 @@ object_class_get_property (GObject    *object,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
       break;
   }
+}
+
+static void
+device_class_attached (UsbemuDevice *device)
+{
+  UsbemuVhciDevice *vhci_device;
+  UsbemuVhciDevicePrivate *priv;
+
+  vhci_device = USBEMU_VHCI_DEVICE (device);
+  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+  g_buffered_input_stream_fill_async ((GBufferedInputStream*) priv->istream,
+                                      sizeof (struct usbip_header),
+                                      G_PRIORITY_DEFAULT,
+                                      priv->cancellable,
+                                      (GAsyncReadyCallback) _on_istream_fill_callback,
+                                      vhci_device);
 }
 
 static gboolean
@@ -283,6 +294,7 @@ usbemu_vhci_device_class_init (UsbemuVhciDeviceClass *klass)
   object_class->set_property = object_class_set_property;
   object_class->get_property = object_class_get_property;
 
+  device_class->attached = device_class_attached;
   device_class->attach_async = device_class_attach_async;
   device_class->detach_async = device_class_detach_async;
 
@@ -394,6 +406,76 @@ _usbemu_vhci_device_set_port (UsbemuVhciDevice *vhci_device,
   g_object_notify_by_pspec (G_OBJECT (vhci_device), props[PROP_PORT]);
 }
 
+static void
+_cleanup_attached_state_from_error (UsbemuVhciDevice *vhci_device)
+{
+  UsbemuVhciDevicePrivate *priv;
+
+  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+  g_cancellable_cancel (priv->cancellable);
+  g_clear_object (&priv->cancellable);
+  g_io_stream_close (G_IO_STREAM (priv->connection), NULL, NULL);
+  g_clear_object (&priv->istream);
+  g_clear_object (&priv->ostream);
+  g_clear_object (&priv->connection);
+
+  _usbemu_vhci_device_set_port (vhci_device,
+                                USBEMU_VHCI_DEVICE_PORT_UNSPECIFIED);
+  _usbemu_device_set_attached ((UsbemuDevice*) vhci_device,
+                               FALSE, USBEMU_SPEED_UNKNOWN);
+}
+
+static void
+_on_istream_fill_callback (GBufferedInputStream *bistream,
+                           GAsyncResult         *result,
+                           UsbemuVhciDevice     *vhci_device)
+{
+  UsbemuVhciDevicePrivate *priv;
+  gssize len;
+  GError *error = NULL;
+
+  len = g_buffered_input_stream_fill_finish (bistream, result, &error);
+  if (len == -1) {
+    g_debug (LOG_COMPONENT "failed to read from input stream. code %d: %s",
+             error->code, error->message);
+
+    /* if not cancelled, do further error handling. */
+    if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+      _cleanup_attached_state_from_error (vhci_device);
+
+    return;
+  }
+
+  if (len == 0) {
+    g_debug (LOG_COMPONENT "input stream EOF.");
+    _cleanup_attached_state_from_error (vhci_device);
+    return;
+  }
+
+  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+
+  len = g_buffered_input_stream_get_available (bistream);
+  if (len < sizeof (struct usbip_header)) {
+    /* read again */
+    g_buffered_input_stream_fill_async (bistream,
+                                        sizeof (struct usbip_header) - len,
+                                        G_PRIORITY_DEFAULT,
+                                        priv->cancellable,
+                                        (GAsyncReadyCallback) _on_istream_fill_callback,
+                                        vhci_device);
+    return;
+  }
+
+  /* skip whatever we have and read again. */
+  g_input_stream_skip ((GInputStream*) bistream, len, NULL, NULL);
+  g_buffered_input_stream_fill_async (bistream,
+                                      sizeof (struct usbip_header),
+                                      G_PRIORITY_DEFAULT,
+                                      priv->cancellable,
+                                      (GAsyncReadyCallback) _on_istream_fill_callback,
+                                      vhci_device);
+}
+
 static gchar*
 _socket_connection_local_address_to_string (GSocketConnection *connection)
 {
@@ -468,12 +550,11 @@ _on_connections_ready (GTask             *task,
   g_io_stream_close (G_IO_STREAM (client_conn), NULL, NULL);
 
   priv->connection = g_object_ref (server_conn);
-  priv->in.stream = g_buffered_input_stream_new (
+  priv->istream = g_buffered_input_stream_new (
         g_io_stream_get_input_stream (G_IO_STREAM (server_conn)));
-  priv->in.cancellable = g_cancellable_new ();
-  priv->out.stream = g_buffered_output_stream_new (
+  priv->ostream = g_buffered_output_stream_new (
         g_io_stream_get_output_stream (G_IO_STREAM (server_conn)));
-  priv->out.cancellable = g_cancellable_new ();
+  priv->cancellable = g_cancellable_new ();
 
   _usbemu_vhci_device_set_port (vhci_device, port);
   _usbemu_device_set_attached ((UsbemuDevice*) vhci_device, TRUE, speed);
