@@ -419,6 +419,8 @@ usbemu_device_attach (UsbemuDevice         *device,
   else
     g_task_return_new_error (task, USBEMU_ERROR, USBEMU_ERROR_NOT_SUPPORTED,
                              "attach operation not supported.");
+
+  g_object_unref (task);
 }
 
 /**
@@ -472,6 +474,8 @@ usbemu_device_detach (UsbemuDevice         *device,
   else
     g_task_return_new_error (task, USBEMU_ERROR, USBEMU_ERROR_NOT_SUPPORTED,
                              "detach operation not supported.");
+
+  g_object_unref (task);
 }
 
 /**
