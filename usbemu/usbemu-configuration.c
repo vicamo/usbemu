@@ -24,7 +24,8 @@
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-enums.h"
 #include "usbemu/usbemu-interface.h"
-#include "usbemu/usbemu-internal.h"
+
+#include "usbemu/internal/utils.h"
 
 /**
  * SECTION:usbemu-configuration

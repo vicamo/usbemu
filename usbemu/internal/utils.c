@@ -25,7 +25,16 @@
 #include <glib.h>
 
 #include "usbemu/usbemu.h"
-#include "usbemu/usbemu-internal.h"
+
+#include "usbemu/internal/utils.h"
+
+/**
+ * SECTION:utils
+ * @short_description: internal functions for libusbemu
+ * @stability: internal
+ *
+ * Internal used functions. Mainly protected member functions.
+ */
 
 static gboolean
 _transform_string_to_type (gchar  *str,

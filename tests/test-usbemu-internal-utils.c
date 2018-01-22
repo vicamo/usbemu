@@ -23,7 +23,8 @@
 #include <glib.h>
 
 #include "usbemu/usbemu.h"
-#include "usbemu/usbemu-internal.h"
+
+#include "usbemu/internal/utils.h"
 #include "tests/test-object.h"
 
 static void

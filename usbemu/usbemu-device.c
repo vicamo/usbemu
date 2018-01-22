@@ -22,7 +22,8 @@
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-errors.h"
-#include "usbemu/usbemu-internal.h"
+
+#include "usbemu/internal/utils.h"
 
 /**
  * SECTION:usbemu

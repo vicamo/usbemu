@@ -50,6 +50,8 @@ lib_LTLIBRARIES += \
   usbemu/libusbemu.la
 
 usbemu_libusbemu_la_SOURCES = \
+  usbemu/internal/utils.c \
+  usbemu/internal/utils.h \
   usbemu/usbemu.h \
   usbemu/usbemu-configuration.c \
   usbemu/usbemu-configuration.h \
@@ -58,9 +60,7 @@ usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu-errors.c \
   usbemu/usbemu-errors.h \
   usbemu/usbemu-interface.c \
-  usbemu/usbemu-interface.h \
-  usbemu/usbemu-internal.c \
-  usbemu/usbemu-internal.h
+  usbemu/usbemu-interface.h
 usbemu_libusbemu_la_CFLAGS = \
   -DLIBUSBEMU_COMPILATION \
   $(BASE_DEPS_CFLAGS)
@@ -131,7 +131,7 @@ test_programs = \
   tests/test-usbemu-device \
   tests/test-usbemu-configuration \
   tests/test-usbemu-interface \
-  tests/test-usbemu-internal
+  tests/test-usbemu-internal-utils
 
 tests_test_usbemu_enums_CFLAGS = $(test_cflags)
 tests_test_usbemu_enums_LDADD = $(test_ldadd)
@@ -143,8 +143,8 @@ tests_test_usbemu_configuration_CFLAGS = $(test_cflags)
 tests_test_usbemu_configuration_LDADD = $(test_ldadd)
 tests_test_usbemu_interface_CFLAGS = $(test_cflags)
 tests_test_usbemu_interface_LDADD = $(test_ldadd)
-tests_test_usbemu_internal_CFLAGS = $(test_cflags)
-tests_test_usbemu_internal_LDADD = \
+tests_test_usbemu_internal_utils_CFLAGS = $(test_cflags)
+tests_test_usbemu_internal_utils_LDADD = \
   $(test_ldadd) \
   tests/libusbemu-test.la
 

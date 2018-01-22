@@ -18,7 +18,7 @@
 #pragma once
 
 #if defined (__USBEMU_USBEMU_H_INSIDE__)
-#error "usbemu-internal.h accidentally included in public headers."
+#error "usbemu/internal/utils.h accidentally included in public headers."
 #endif
 
 #include <glib.h>
@@ -27,14 +27,6 @@
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-interface.h"
-
-/**
- * SECTION:usbemu-internal
- * @short_description: internal functions for libusbemu
- * @stability: internal
- *
- * Internal used functions. Mainly protected member functions.
- */
 
 G_BEGIN_DECLS
 

@@ -40,7 +40,8 @@ CFILE_GLOB = \
   $(top_srcdir)/usbemu/*.c
 
 # Header files to ignore when scanning.
-IGNORE_HFILES =
+IGNORE_HFILES = \
+  $(top_srcdir)/usbemu/internal/*.h
 
 # Extra XML files that are included by $(DOC_MAIN_SGML_FILE).
 content_files = \
