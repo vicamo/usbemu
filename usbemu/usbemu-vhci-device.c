@@ -19,6 +19,7 @@
 #include "config.h"
 #endif
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +30,7 @@
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-enums.h"
 #include "usbemu/usbemu-errors.h"
+#include "usbemu/usbemu-urb.h"
 #include "usbemu/usbemu-vhci-device.h"
 
 #include "usbemu/internal/usbip.h"
@@ -66,6 +68,9 @@ typedef struct  _UsbemuVhciDevicePrivate {
   GInputStream *istream;
   GOutputStream *ostream;
   GCancellable *cancellable;
+
+  GList *rx_pending;
+  GList *tx_queue;
 } UsbemuVhciDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuVhciDevice, usbemu_vhci_device,
@@ -331,6 +336,14 @@ usbemu_vhci_device_init (UsbemuVhciDevice *vhci_device)
 
   priv->devid = 0;
   priv->port = USBEMU_VHCI_DEVICE_PORT_UNSPECIFIED;
+
+  priv->connection = NULL;
+  priv->cancellable = NULL;
+  priv->istream = NULL;
+  priv->ostream = NULL;
+
+  priv->rx_pending = NULL;
+  priv->tx_queue = NULL;
 }
 
 /**
@@ -426,6 +439,208 @@ _cleanup_attached_state_from_error (UsbemuVhciDevice *vhci_device)
 }
 
 static void
+_enqueue_tx_submit (UsbemuVhciDevicePrivate *priv,
+                    guint32                  seqnum,
+                    UsbemuUrb               *urb)
+{
+  g_debug (LOG_COMPONENT "tx enqueue submit: %u", seqnum);
+}
+
+static void
+_enqueue_tx_unlink (UsbemuVhciDevicePrivate *priv,
+                    guint32                  seqnum,
+                    guint32                  status)
+{
+  g_debug (LOG_COMPONENT "tx enqueue unlink: %u", seqnum);
+#if 0
+  struct usbip_header *header;
+
+  header = g_slice_new0 (struct usbip_header);
+  header->base.seqnum = seqnum;
+  header->u.ret_unlink.status = status;
+  priv->tx_queue = g_list_append (priv->tx_queue, header);
+#endif
+}
+
+typedef struct _PendingUrbData {
+  guint32 seqnum;
+  guint32 unlink_seqnum;
+  GCancellable *cancellable;
+} PendingUrbData;
+
+static void
+_on_submit_urb_callback (UsbemuVhciDevice *vhci_device,
+                         UsbemuUrb        *urb,
+                         GAsyncResult     *result,
+                         PendingUrbData   *pending)
+{
+  UsbemuVhciDevicePrivate *priv;
+  GError *error = NULL;
+  GList *list;
+
+  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+  list = g_list_find (priv->rx_pending, pending);
+  if (list != NULL) {
+    g_object_unref (pending->cancellable);
+    priv->rx_pending = g_list_delete_link (priv->rx_pending, list);
+  }
+
+  if (!usbemu_device_submit_urb_finish ((UsbemuDevice*) vhci_device,
+                                        result, &error)) {
+    if (g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+      _enqueue_tx_unlink (priv, pending->unlink_seqnum, -ECONNRESET);
+    else
+      _enqueue_tx_submit (priv, pending->seqnum, urb);
+  } else
+    _enqueue_tx_submit (priv, pending->seqnum, urb);
+
+  g_slice_free (PendingUrbData, pending);
+}
+
+static void
+_recv_cmd_submit (UsbemuVhciDevice    *vhci_device,
+                  struct usbip_header *header)
+{
+  UsbemuVhciDevicePrivate *priv;
+  UsbemuUrb *urb;
+  UsbemuIsoPacketDescriptor *descriptor;
+  struct usbip_iso_packet_descriptor iso_frame_desc;
+  gsize i;
+  PendingUrbData *pending;
+
+  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+
+  urb = usbemu_urb_new ();
+  _usbemu_usbip_cmd_submit_header_to_urb (&header->u.cmd_submit, urb);
+
+  if ((header->base.direction == USBIP_DIR_OUT)
+      && (urb->transfer_buffer_length != 0)) {
+    g_input_stream_read (priv->istream,
+                         urb->transfer_buffer, urb->transfer_buffer_length,
+                         NULL, NULL);
+  }
+
+  if (/* FIXME: type iso */urb->number_of_packets != 0) {
+    descriptor = urb->iso_frame_desc;
+    for (i = 0; i < urb->number_of_packets; ++i, ++descriptor) {
+      g_input_stream_read (priv->istream,
+                           &iso_frame_desc, sizeof (iso_frame_desc),
+                           NULL, NULL);
+      _usbemu_usbip_iso_packet_correct_endian (&iso_frame_desc,
+                                               USBEMU_ENDPOINT_DIRECTION_OUT);
+      _usbemu_usbip_iso_packet_to_urb (&iso_frame_desc, descriptor);
+    }
+  }
+
+  pending = g_slice_new0 (PendingUrbData);
+  pending->seqnum = header->base.seqnum;
+  pending->cancellable = g_cancellable_new ();
+  priv->rx_pending = g_list_append (priv->rx_pending, pending);
+
+  usbemu_device_submit_urb_async ((UsbemuDevice*) vhci_device,
+                                  urb, pending->cancellable,
+                                  (UsbemuSubmitUrbReadyCallback) _on_submit_urb_callback,
+                                  pending);
+
+  usbemu_urb_unref (urb);
+}
+
+static void
+_recv_cmd_unlink (UsbemuVhciDevice    *vhci_device,
+                  struct usbip_header *header)
+{
+  UsbemuVhciDevicePrivate *priv;
+  GList *list;
+  PendingUrbData *pending;
+
+  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+
+  for (list = priv->rx_pending; list != NULL; list = list->next) {
+    pending = list->data;
+    if (pending->seqnum != header->u.cmd_unlink.seqnum)
+      continue;
+
+    pending->unlink_seqnum = header->base.seqnum;
+    g_cancellable_cancel (pending->cancellable);
+    return;
+  }
+
+  /* not found. */
+  _enqueue_tx_unlink (priv, header->base.seqnum, 0);
+}
+
+static void
+_handle_istream_packet_available (UsbemuVhciDevice    *vhci_device,
+                                  struct usbip_header *header)
+{
+  _usbemu_usbip_header_dump (header);
+
+  switch (header->base.command) {
+    case USBIP_CMD_SUBMIT:
+      _recv_cmd_submit (vhci_device, header);
+      break;
+    case USBIP_CMD_UNLINK:
+      _recv_cmd_unlink (vhci_device, header);
+      break;
+    default:
+      g_assert_not_reached ();
+      break;
+  }
+}
+
+static void
+_handle_istream_header_available (UsbemuVhciDevice     *vhci_device,
+                                  GBufferedInputStream *bistream)
+{
+  UsbemuVhciDevicePrivate *priv;
+  struct usbip_header header;
+  struct usbip_header_cmd_submit *cmd_submit;
+  gsize total_len, available, size;
+
+  total_len = sizeof (header);
+
+  g_buffered_input_stream_peek (bistream, &header, 0, sizeof (header));
+  _usbemu_usbip_header_correct_endian (&header, USBEMU_ENDPOINT_DIRECTION_OUT);
+
+  switch (header.base.command) {
+    case USBIP_CMD_SUBMIT:
+      cmd_submit = &header.u.cmd_submit;
+      if (header.base.direction == USBIP_DIR_OUT)
+        total_len += cmd_submit->transfer_buffer_length;
+      /* FIXME: type iso */total_len +=
+          cmd_submit->number_of_packets * sizeof (struct usbip_iso_packet_descriptor);
+      break;
+    case USBIP_CMD_UNLINK:
+      /* no extra payloads. */
+      break;
+    default:
+      g_warning (LOG_COMPONENT "unknown command %u", header.base.command);
+      _cleanup_attached_state_from_error (vhci_device);
+      break;
+  }
+
+  available = g_buffered_input_stream_get_available (bistream);
+  if (available < total_len) {
+    size = g_buffered_input_stream_get_buffer_size (bistream);
+    if (size < total_len)
+      g_buffered_input_stream_set_buffer_size (bistream, total_len);
+
+    priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
+    g_buffered_input_stream_fill_async (bistream,
+                                        total_len - available,
+                                        G_PRIORITY_DEFAULT,
+                                        priv->cancellable,
+                                        (GAsyncReadyCallback) _on_istream_fill_callback,
+                                        vhci_device);
+    return;
+  }
+
+  g_input_stream_skip ((GInputStream*) bistream, sizeof (header), NULL, NULL);
+
+  _handle_istream_packet_available (vhci_device, &header);
+}
+
+static void
 _on_istream_fill_callback (GBufferedInputStream *bistream,
                            GAsyncResult         *result,
                            UsbemuVhciDevice     *vhci_device)
@@ -453,11 +668,10 @@ _on_istream_fill_callback (GBufferedInputStream *bistream,
     return;
   }
 
-  priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
-
   len = g_buffered_input_stream_get_available (bistream);
   if (len < sizeof (struct usbip_header)) {
     /* read again */
+    priv = USBEMU_VHCI_DEVICE_GET_PRIVATE (vhci_device);
     g_buffered_input_stream_fill_async (bistream,
                                         sizeof (struct usbip_header) - len,
                                         G_PRIORITY_DEFAULT,
@@ -467,14 +681,7 @@ _on_istream_fill_callback (GBufferedInputStream *bistream,
     return;
   }
 
-  /* skip whatever we have and read again. */
-  g_input_stream_skip ((GInputStream*) bistream, len, NULL, NULL);
-  g_buffered_input_stream_fill_async (bistream,
-                                      sizeof (struct usbip_header),
-                                      G_PRIORITY_DEFAULT,
-                                      priv->cancellable,
-                                      (GAsyncReadyCallback) _on_istream_fill_callback,
-                                      vhci_device);
+  _handle_istream_header_available (vhci_device, bistream);
 }
 
 static gchar*

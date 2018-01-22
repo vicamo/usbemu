@@ -21,13 +21,10 @@
 #error "libusbemu internal use only."
 #endif
 
-/**
- * SECTION:usbip
- * @short_description: USBIP protocol structures
- * @stability: private
- *
- * Internally used USBIP protocol structures.
- */
+#include <glib.h>
+
+#include <usbemu/usbemu-interface.h>
+#include <usbemu/usbemu-urb.h>
 
 #ifndef __GTK_DOC_IGNORE__
 
@@ -95,5 +92,15 @@ struct usbip_iso_packet_descriptor {
 } __attribute__ ((packed));
 
 /* END SHAMELESS COPY FROM <KERNEL>/drivers/usb/usbip/usbip_common.h */
+
+void _usbemu_usbip_header_correct_endian     (struct usbip_header                *header,
+                                              UsbemuEndpointDirections            direction);
+void _usbemu_usbip_iso_packet_correct_endian (struct usbip_iso_packet_descriptor *iso_frame_desc,
+                                              UsbemuEndpointDirections            direction);
+void _usbemu_usbip_header_dump               (struct usbip_header                *header);
+void _usbemu_usbip_cmd_submit_header_to_urb  (struct usbip_header_cmd_submit     *cmd_submit,
+                                              UsbemuUrb                          *urb);
+void _usbemu_usbip_iso_packet_to_urb         (struct usbip_iso_packet_descriptor *iso_frame_desc,
+                                              UsbemuIsoPacketDescriptor          *descriptor);
 
 #endif /* !__GTK_DOC_IGNORE__ */
