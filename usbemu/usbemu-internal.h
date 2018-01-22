@@ -42,7 +42,8 @@ UsbemuDevice* _usbemu_device_new_from_argv_inner (gchar    ***argv,
                                                   GError    **error,
                                                   gboolean    allow_remaining);
 void _usbemu_device_set_attached (UsbemuDevice *device,
-                                  gboolean      attached);
+                                  gboolean      attached,
+                                  UsbemuSpeeds  speed);
 
 UsbemuConfiguration* _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
                                                                 GError    **error,

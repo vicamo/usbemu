@@ -199,6 +199,29 @@ typedef enum /*< enum,prefix=USBEMU >*/
  */
 #define USBEMU_PROTOCOL_VENDOR_SPECIFIC 0xFF
 
+/**
+ * UsbemuSpeeds:
+ * @USBEMU_SPEED_UNKNOWN: unknown or not attached yet
+ * @USBEMU_SPEED_LOW: USB 1.1 low speed
+ * @USBEMU_SPEED_FULL: USB 1.1 full speed
+ * @USBEMU_SPEED_HIGH: USB 2.0 high speed
+ * @USBEMU_SPEED_WIRELESS: USB wireless
+ * @USBEMU_SPEED_SUPER: USB 3.0 super speed
+ * @USBEMU_SPEED_SUPER_PLUS: USB 3.1 super+ speed
+ *
+ * USB device/bus speed.
+ */
+typedef enum /*< enum,prefix=USBEMU >*/
+{
+  USBEMU_SPEED_UNKNOWN, /*< nick=unknown >*/
+  USBEMU_SPEED_LOW, /*< nick=low >*/
+  USBEMU_SPEED_FULL, /*< nick=full >*/
+  USBEMU_SPEED_HIGH, /*< nick=high >*/
+  USBEMU_SPEED_WIRELESS, /*< nick=wireless >*/
+  USBEMU_SPEED_SUPER, /*< nick=super >*/
+  USBEMU_SPEED_SUPER_PLUS, /*< nick=super_plus >*/
+} UsbemuSpeeds;
+
 UsbemuDevice* usbemu_device_new             ();
 UsbemuDevice* usbemu_device_new_from_argv   (gchar       **argv,
                                              GError      **error);
@@ -256,6 +279,7 @@ void          usbemu_device_set_product_name      (UsbemuDevice  *device,
 const gchar*  usbemu_device_get_serial            (UsbemuDevice  *device);
 void          usbemu_device_set_serial            (UsbemuDevice  *device,
                                                    const gchar   *serial);
+UsbemuSpeeds  usbemu_device_get_speed             (UsbemuDevice  *device);
 
 gboolean                     usbemu_device_add_configuration    (UsbemuDevice                *device,
                                                                  struct _UsbemuConfiguration *configuration);

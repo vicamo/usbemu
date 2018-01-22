@@ -72,6 +72,7 @@ typedef struct  _UsbemuDevicePrivate {
   gchar *manufacturer;
   gchar *product;
   gchar *serial;
+  UsbemuSpeeds speed;
   GSList *configurations;
 } UsbemuDevicePrivate;
 
@@ -243,6 +244,7 @@ usbemu_device_init (UsbemuDevice *device)
   priv->product = g_strdup ("emulated device");
   /* `echo -n dead:beef | md5sum` */
   priv->serial = g_strdup ("9641c4a0c0d26686a3fcdc92711f8f42");
+  priv->speed = USBEMU_SPEED_UNKNOWN;
 }
 
 /**
@@ -500,13 +502,15 @@ usbemu_device_detach_finish (UsbemuDevice         *device,
 
 void
 _usbemu_device_set_attached (UsbemuDevice *device,
-                             gboolean      attached)
+                             gboolean      attached,
+                             UsbemuSpeeds  speed)
 {
   UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
 
   if (attached == priv->attached)
     return;
 
+  priv->speed = attached ? speed : USBEMU_SPEED_UNKNOWN;
   priv->attached = attached;
   g_object_notify_by_pspec ((GObject*) device, props[PROP_ATTACHED]);
   g_signal_emit (device,
@@ -914,6 +918,22 @@ usbemu_device_set_serial (UsbemuDevice *device,
   if (priv->serial != NULL)
     g_free (priv->serial);
   priv->serial = g_strdup (serial);
+}
+
+/**
+ * usbemu_device_get_speed:
+ * @device: (in): a #UsbemuDevice object.
+ *
+ * Get current device/bus speed.
+ *
+ * Returns: A #UsbemuSpeeds.
+ */
+UsbemuSpeeds
+usbemu_device_get_speed (UsbemuDevice *device)
+{
+  g_return_val_if_fail (USBEMU_IS_DEVICE (device), USBEMU_SPEED_UNKNOWN);
+
+  return USBEMU_DEVICE_GET_PRIVATE (device)->speed;
 }
 
 /**
