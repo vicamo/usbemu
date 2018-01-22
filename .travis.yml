@@ -36,12 +36,24 @@ script:
 - ${DOCKER_EXEC} make V=1 -j $(nproc)
 - test "$(stat -c %s docs/reference/usbemu-undeclared.txt 2>/dev/null)" = "0"
 - test "$(stat -c %s docs/reference/usbemu-unused.txt 2>/dev/null)" = "0"
-- test -n "$(grep '100% symbol docs coverage' docs/reference/usbemu-undocumented.txt)"
-- ${DOCKER_EXEC} sh -c 'make install V=1 DESTDIR=$(pwd)/x && rm -rf $(pwd)/x'
+- grep '100% symbol docs coverage' docs/reference/usbemu-undocumented.txt
+- ${DOCKER_EXEC} sh -c 'make install V=1 DESTDIR='"${TRAVIS_BUILD_DIR%${TRAVIS_REPO_SLUG}}/install"
 - ${DOCKER_EXEC} make V=1 install
 - ${DOCKER_EXEC} make V=1 distcheck
 - ${DOCKER_EXEC} make V=1 clean
 - git status
+
+deploy:
+  provider: pages
+  repo: usbemu/usbemu.github.io
+  github-token:
+    secure: uutp7b2vPxuFJOUq0aHj93Qls92Nc2Pp5c+m0rM5D+aWzG9tx8na0bhYpPOBJnseC8Uir2e3wAL+t5m0n5x10CZEvESyBSwz5bqAmYfku/Nz6pXpR7LuIKIwUqj4M1uR0D19r42aJGTcqnmob002oYaxS1JQZaetr54wO/WTXjOg12TDuPkcc3Xr3xLWkegq5oxY8TQ3SAMdv5UyPiD685T90N7/SJDYdACZ085RUE2eKxMr3hFVjvhBdZhEnhkA0LHDkmaFfn8PGlCMp52zo0tkqk+3NeOcKaUNNo+bNUC9xgciIqmjzh8e3ezMCJCaeQJC00ccFwdUUYX7fV+biMI9RqGUJB7TXduhmwDaFL38FZV/uWEP+XWoMej8FMj6hm3fyq0vVN7SDMvyUiqCH2VCIIxJ9N7FgAffo3jNdRqlC/7o+/VAWAXDCh4Zkw/h3M+ImonB8SOp1FUKqS3TTAHvYRYby/WPZJq/3hIX2BnEt9L+gA8XuhRIN5zcBKV055gP6C1hQoTmM2iMWoRR/ItlDfO1/Th74dEBMRnrV+TvzKhmedg0iYhXH7QZxAHebdpOWzRePnKJfD07yGBaxX7nM2tusQjxk7LJ4Nf72+ti0kw77hB7y/fVqy8Vt1zLyVLMqO3pMjEYTayjs39pbuUdZtqhTMUWmHkNJn1/Lzo=
+  local-dir: ../../install/usr/local/share/gtk-doc/html/usbemu
+  target-branch: master
+  keep-history: true
+  skip-cleanup: true
+  on:
+    branch: master
 
 notifications:
   slack:
