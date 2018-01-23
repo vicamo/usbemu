@@ -25,6 +25,7 @@
 #include <gio/gio.h>
 
 #include <usbemu/usbemu-configuration.h>
+#include <usbemu/usbemu-urb.h>
 #include <usbemu/usbemu-usb.h>
 
 G_BEGIN_DECLS
@@ -81,6 +82,21 @@ struct _UsbemuDeviceClass {
   /* Reserved slots for furture extension. */
   gpointer padding[12];
 };
+
+/**
+ * UsbemuSubmitUrbReadyCallback:
+ * @device: (in): a #UsbemuDevice object.
+ * @urb: (in): a #UsbemuUrb object.
+ * @result: (in): the #GAsyncResult.
+ * @user_data: (in): user data passed to the callback.
+ *
+ * Type definition for a function that will be called back when a previous
+ * usbemu_device_submit_urb_async() call has been completed.
+ */
+typedef void (*UsbemuSubmitUrbReadyCallback) (UsbemuDevice *device,
+                                              UsbemuUrb    *urb,
+                                              GAsyncResult *result,
+                                              gpointer      user_data);
 
 UsbemuDevice* usbemu_device_new             ();
 UsbemuDevice* usbemu_device_new_from_argv   (gchar       **argv,
@@ -147,5 +163,14 @@ UsbemuConfiguration* usbemu_device_get_configuration    (UsbemuDevice        *de
                                                          guint                configuration_value);
 GPtrArray*           usbemu_device_get_configurations   (UsbemuDevice        *device);
 guint                usbemu_device_get_n_configurations (UsbemuDevice        *device);
+
+void     usbemu_device_submit_urb_async  (UsbemuDevice                  *device,
+                                          UsbemuUrb                     *urb,
+                                          GCancellable                  *cancellable,
+                                          UsbemuSubmitUrbReadyCallback   callback,
+                                          gpointer                       user_data);
+gboolean usbemu_device_submit_urb_finish (UsbemuDevice                  *device,
+                                          GAsyncResult                  *result,
+                                          GError                       **error);
 
 G_END_DECLS

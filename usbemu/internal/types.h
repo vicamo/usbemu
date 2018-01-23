@@ -1,5 +1,5 @@
 /* usbemu - USB Emulation Library
- * Copyright (C) 2016 You-Sheng Yang
+ * Copyright (C) 2018 You-Sheng Yang
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -17,16 +17,31 @@
 
 #pragma once
 
-#define __USBEMU_USBEMU_H_INSIDE__
+#if !defined (LIBUSBEMU_COMPILATION)
+#error "libusbemu internal use only."
+#endif
 
-#include <usbemu/usbemu-configuration.h>
-#include <usbemu/usbemu-device.h>
-#include <usbemu/usbemu-enums.h>
-#include <usbemu/usbemu-errors.h>
-#include <usbemu/usbemu-interface.h>
-#include <usbemu/usbemu-urb.h>
-#include <usbemu/usbemu-usb.h>
+#include <glib.h>
+#include <gio/gio.h>
 
-#include <usbemu/usbemu-vhci-device.h>
+#include "usbemu/usbemu-urb.h"
 
-#undef __USBEMU_USBEMU_H_INSIDE__
+/**
+ * SECTION:types
+ * @short_description: private structures
+ * @stability: private
+ *
+ * Internally used structures.
+ */
+
+#ifndef __GTK_DOC_IGNORE__
+
+typedef struct _UsbemuUrbReal
+{
+  UsbemuUrb urb;
+
+  gint ref_count;
+  GTask *task;
+} UsbemuUrbReal;
+
+#endif /* !__GTK_DOC_IGNORE__ */

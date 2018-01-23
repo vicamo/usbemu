@@ -50,6 +50,7 @@ lib_LTLIBRARIES += \
   usbemu/libusbemu.la
 
 usbemu_libusbemu_la_SOURCES = \
+  usbemu/internal/types.h \
   usbemu/internal/utils.c \
   usbemu/internal/utils.h \
   usbemu/usbemu.h \
@@ -61,6 +62,8 @@ usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu-errors.h \
   usbemu/usbemu-interface.c \
   usbemu/usbemu-interface.h \
+  usbemu/usbemu-urb.c \
+  usbemu/usbemu-urb.h \
   usbemu/usbemu-usb.h
 usbemu_libusbemu_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
@@ -79,6 +82,7 @@ usbemu_include_HEADERS += \
   usbemu/usbemu-device.h \
   usbemu/usbemu-errors.h \
   usbemu/usbemu-interface.h \
+  usbemu/usbemu-urb.h \
   usbemu/usbemu-usb.h
 
 ###############################

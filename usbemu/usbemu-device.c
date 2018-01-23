@@ -19,10 +19,14 @@
 #include "config.h"
 #endif
 
+#include <glib.h>
+#include <gio/gio.h>
+
 #include "usbemu/usbemu-device.h"
 #include "usbemu/usbemu-configuration.h"
 #include "usbemu/usbemu-errors.h"
 
+#include "usbemu/internal/types.h"
 #include "usbemu/internal/utils.h"
 
 /**
@@ -75,6 +79,7 @@ typedef struct  _UsbemuDevicePrivate {
   gchar *serial;
   UsbemuSpeeds speed;
   GPtrArray *configurations;
+  GList *urb_queue;
 } UsbemuDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDevice, usbemu_device, G_TYPE_OBJECT)
@@ -1043,4 +1048,135 @@ usbemu_device_get_n_configurations (UsbemuDevice *device)
   g_return_val_if_fail (USBEMU_IS_DEVICE (device), 0);
 
   return USBEMU_DEVICE_GET_PRIVATE (device)->configurations->len;
+}
+
+static void
+_free_link_from_queue (GList **head,
+                       GList  *list)
+{
+  g_clear_object (&((UsbemuUrbReal*) list->data)->task);
+
+  usbemu_urb_unref ((UsbemuUrb*) list->data);
+  *head = g_list_delete_link (*head, list);
+}
+
+static gboolean
+_on_urb_loop_timer (UsbemuDevice *device)
+{
+  UsbemuDevicePrivate *priv;
+  GList *current, *next;
+  UsbemuUrbReal *rurb;
+
+  priv = USBEMU_DEVICE_GET_PRIVATE (device);
+  for (current = priv->urb_queue; current != NULL; current = next) {
+    next = current->next;
+
+    rurb = (UsbemuUrbReal*) current->data;
+    if (g_task_return_error_if_cancelled (rurb->task)) {
+      _free_link_from_queue (&priv->urb_queue, current);
+      continue;
+    }
+
+    /* FIXME: */
+    g_task_return_boolean (rurb->task, TRUE);
+    _free_link_from_queue (&priv->urb_queue, current);
+  }
+
+  return priv->urb_queue != NULL;
+}
+
+static gboolean
+_start_urb_loop (UsbemuDevice *device)
+{
+  if (_on_urb_loop_timer (device)) {
+    g_timeout_add_full (G_PRIORITY_DEFAULT, 1,
+                        (GSourceFunc) _on_urb_loop_timer,
+                        g_object_ref (device),
+                        (GDestroyNotify) g_object_unref);
+  }
+
+  return FALSE;
+}
+
+typedef struct _SubmitUrbData {
+  UsbemuUrb *urb;
+  UsbemuSubmitUrbReadyCallback callback;
+  gpointer user_data;
+} SubmitUrbData;
+
+static void
+_on_submit_urb_callback (UsbemuDevice  *device,
+                         GAsyncResult  *result,
+                         SubmitUrbData *data)
+{
+  if (data->callback != NULL)
+    data->callback (device, data->urb, result, data->user_data);
+
+  usbemu_urb_unref (data->urb);
+  g_slice_free (SubmitUrbData, data);
+}
+
+/**
+ * usbemu_device_submit_urb_async:
+ * @device: (in): a #UsbemuDevice object.
+ * @urb: (in): a #UsbemuUrb object.
+ * @cancellable: (in) (optional): a #GCancellable or %NULL.
+ * @callback: (scope async): a #UsbemuSubmitUrbReadyCallback.
+ * @user_data: (closure): user data for the callback.
+ *
+ * Submit an @urb to @device.
+ */
+void
+usbemu_device_submit_urb_async (UsbemuDevice                 *device,
+                                UsbemuUrb                    *urb,
+                                GCancellable                 *cancellable,
+                                UsbemuSubmitUrbReadyCallback  callback,
+                                gpointer                      user_data)
+{
+  UsbemuDevicePrivate *priv;
+  SubmitUrbData *task_data;
+  UsbemuUrbReal *rurb = (UsbemuUrbReal*) urb;
+
+  g_return_if_fail (USBEMU_IS_DEVICE (device));
+  g_return_if_fail ((urb != NULL) && (rurb->task == NULL));
+
+  task_data = g_slice_new0 (SubmitUrbData);
+  task_data->urb = usbemu_urb_ref (urb);
+  task_data->callback = callback;
+  task_data->user_data = user_data;
+  rurb->task = g_task_new (device, cancellable,
+                           (GAsyncReadyCallback) _on_submit_urb_callback,
+                           task_data);
+  /* manually check cancellable in _on_urb_loop_timer(). */
+  g_task_set_check_cancellable (rurb->task, FALSE);
+
+  priv = USBEMU_DEVICE_GET_PRIVATE (device);
+  priv->urb_queue = g_list_append (priv->urb_queue, usbemu_urb_ref (urb));
+  if (priv->urb_queue->next == NULL) {
+    /* urb_queue was empty, kick off _start_urb_loop(). */
+    g_idle_add_full (G_PRIORITY_DEFAULT,
+                     (GSourceFunc) _start_urb_loop,
+                     g_object_ref (device),
+                     (GDestroyNotify) g_object_unref);
+  }
+}
+
+/**
+ * usbemu_device_submit_urb_finish:
+ * @device: (in): a #UsbemuDevice object.
+ * @result: (in): the #GAsyncResult.
+ * @error: (out) (optional): #GError for error reporting, or %NULL to ignore.
+ *
+ * Gets the result of a usbemu_device_submit_urb_async() call.
+ *
+ * Returns: %TRUE if @urb successfully transferred, %FALSE otherwise.
+ */
+gboolean
+usbemu_device_submit_urb_finish (UsbemuDevice  *device,
+                                 GAsyncResult  *result,
+                                 GError       **error)
+{
+  g_return_val_if_fail (g_task_is_valid (result, device), FALSE);
+
+  return g_task_propagate_boolean (G_TASK (result), error);
 }

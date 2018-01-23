@@ -59,6 +59,7 @@
       <xi:include href="xml/usbemu-device.xml"/>
       <xi:include href="xml/usbemu-configuration.xml"/>
       <xi:include href="xml/usbemu-interface.xml"/>
+      <xi:include href="xml/usbemu-urb.xml"/>
       <xi:include href="xml/usbemu-enums.xml"/>
       <xi:include href="xml/usbemu-errors.xml"/>
     </chapter>
