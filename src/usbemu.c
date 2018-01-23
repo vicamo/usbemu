@@ -132,6 +132,16 @@ parse_arg (int   *argc,
 }
 
 static void
+on_device_detached (UsbemuDevice *device)
+{
+  g_print ("Device %04x:%04x detached.\n",
+           usbemu_device_get_vendor_id (device),
+           usbemu_device_get_product_id (device));
+
+  g_idle_add ((GSourceFunc) g_main_loop_quit, main_loop);
+}
+
+static void
 device_attach_callback (UsbemuDevice *device,
                         GAsyncResult *result,
                         gpointer      user_data G_GNUC_UNUSED)
@@ -151,8 +161,8 @@ device_attach_callback (UsbemuDevice *device,
            usbemu_device_get_vendor_id (device),
            usbemu_device_get_product_id (device));
 
-  /* TODO: */
-  g_idle_add ((GSourceFunc) g_main_loop_quit, main_loop);
+  g_signal_connect ((GObject*) device, USBEMU_DEVICE_SIGNAL_DETACHED,
+                    (GCallback) on_device_detached, NULL);
 }
 
 static void
