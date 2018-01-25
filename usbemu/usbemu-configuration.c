@@ -672,6 +672,8 @@ _usbemu_configuration_set_device (UsbemuConfiguration *configuration,
                                   UsbemuDevice        *device,
                                   guint                configuration_value)
 {
+  g_assert_true ((device != NULL) && (configuration->device == NULL));
+
   configuration->device = g_object_ref (device);
   configuration->bConfigurationValue = configuration_value;
 }

@@ -827,6 +827,8 @@ _usbemu_interface_set_configuration (UsbemuInterface     *interface,
 {
   UsbemuInterfacePrivate *priv = USBEMU_INTERFACE_GET_PRIVATE (interface);
 
+  g_assert_true ((configuration != NULL) && (priv->configuration == NULL));
+
   priv->configuration = g_object_ref (configuration);
   priv->bInterfaceNumber = interface_number;
   priv->bAlternateSetting = alternate_setting;
