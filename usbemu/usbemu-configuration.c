@@ -58,7 +58,7 @@ struct _UsbemuConfiguration {
   guint bMaxPower;
 
   UsbemuDevice *device;
-  GSList *interfaces;
+  GArray *interface_groups;
 };
 
 G_DEFINE_TYPE (UsbemuConfiguration, usbemu_configuration, G_TYPE_OBJECT)
@@ -143,20 +143,13 @@ gobject_class_get_property (GObject    *object,
 }
 
 static void
-_free_interfaces_slist_inner (GSList *slist)
-{
-  g_slist_free_full (slist, (GDestroyNotify) g_object_unref);
-}
-
-static void
 gobject_class_dispose (GObject *object)
 {
   UsbemuConfiguration *configuration = USBEMU_CONFIGURATION (object);
 
-  if (configuration->interfaces != NULL) {
-    g_slist_free_full (configuration->interfaces,
-                       (GDestroyNotify) _free_interfaces_slist_inner);
-    configuration->interfaces = NULL;
+  if (configuration->interface_groups != NULL) {
+    g_array_unref (configuration->interface_groups);
+    configuration->interface_groups = NULL;
   }
 
   g_clear_object (&configuration->device);
@@ -228,7 +221,10 @@ usbemu_configuration_init (UsbemuConfiguration *configuration)
   configuration->bmAttributes = USBEMU_CONFIGURATION_PROP_ATTRIBUTES__DEFAULT;
   configuration->bMaxPower = USBEMU_CONFIGURATION_PROP_MAX_POWER__DEFAULT;
   configuration->device = NULL;
-  configuration->interfaces = NULL;
+
+  configuration->interface_groups = g_array_new (FALSE, TRUE, sizeof (GArray*));
+  g_array_set_clear_func (configuration->interface_groups,
+                          (GDestroyNotify) _usbemu_garray_unref_dereferenced);
 }
 
 /**
@@ -276,7 +272,8 @@ _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
   GType configuration_type;
   UsbemuConfiguration *configuration;
   gchar **strv;
-  GArray *interfaces;
+  UsbemuInterface *interface;
+  guint interface_number;
 
   configuration_type = USBEMU_TYPE_CONFIGURATION;
   configuration = (UsbemuConfiguration*)
@@ -287,28 +284,21 @@ _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
   if (*argv == NULL)
     return configuration;
 
-  interfaces = g_array_new (TRUE, TRUE, sizeof (UsbemuInterface*));
-  g_array_set_clear_func (interfaces,
-                          (GDestroyNotify) _usbemu_object_unref_dereferenced);
+  interface_number = 0;
 
   strv = *argv;
   while (*strv != NULL) {
     if (g_ascii_strcasecmp (*strv, "--interface") == 0) {
       ++strv;
-
-      if (interfaces->len) {
-        usbemu_configuration_add_alternate_interfaces (configuration,
-                                                       (UsbemuInterface**) interfaces->data);
-        g_array_remove_range (interfaces, 0, interfaces->len);
-      }
+      interface_number = configuration->interface_groups->len;
       continue;
     } else if (g_ascii_strcasecmp (*strv, "--alternate-setting") == 0) {
-      UsbemuInterface *interface;
-
       ++strv;
       interface = _usbemu_interface_new_from_argv_inner (&strv, error, TRUE);
       if (interface != NULL) {
-        g_array_append_val (interfaces, interface);
+        usbemu_configuration_add_alternate_interface (configuration,
+                                                      interface_number,
+                                                      interface);
         continue;
       }
     } else if (allow_remaining && (**strv == '-')) {
@@ -323,13 +313,6 @@ _usbemu_configuration_new_from_argv_inner (gchar    ***argv,
     break;
   }
   *argv = strv;
-
-  if ((configuration != NULL) && interfaces->len) {
-    usbemu_configuration_add_alternate_interfaces (configuration,
-                                                   (UsbemuInterface**) interfaces->data);
-  }
-
-  g_array_free (interfaces, TRUE);
 
   return configuration;
 }
@@ -530,90 +513,177 @@ usbemu_configuration_get_device (UsbemuConfiguration *configuration)
   return NULL;
 }
 
-/**
- * usbemu_configuration_add_alternate_interfaces:
- * @configuration: (in): the #UsbemuConfiguration object.
- * @interfaces: (in) (array zero-terminated=1) (transfer none): a
- *     %NULL-terminated array of #UsbemuInterface objects.
- *
- * Add an multiple interfaces to configuration. These interfaces, if valid, will
- * be assigned with a new, identical interface number, and each of them an
- * increamental alternate setting number.
- *
- * Returns: interface number of added interfaces if succeeded. -1 otherwise.
- */
-gint
-usbemu_configuration_add_alternate_interfaces (UsbemuConfiguration  *configuration,
-                                               UsbemuInterface     **interfaces)
+static GArray*
+_create_interfaces_array ()
 {
-  UsbemuInterface **interface;
-  guint interface_number, alternate_setting;
-  GSList *slist;
+  GArray *interfaces;
 
-  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), -1);
-  g_return_val_if_fail ((interfaces != NULL), -1);
+  interfaces = g_array_new (FALSE, TRUE, sizeof (UsbemuInterface*));
+  g_array_set_clear_func (interfaces,
+                          (GDestroyNotify) _usbemu_object_unref_dereferenced);
 
-  for (interface = interfaces; *interface != NULL; ++interface) {
-    if (usbemu_interface_get_configuration (*interface) != NULL)
-      return -1;
+  return interfaces;
+}
+
+static GArray*
+_get_alternate_interfaces (UsbemuConfiguration *configuration,
+                           guint                interface_number)
+{
+  GArray *interfaces;
+
+  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), NULL);
+
+  if (interface_number >= configuration->interface_groups->len)
+    return NULL;
+
+  return g_array_index (configuration->interface_groups,
+                        GArray*, interface_number);
+}
+
+/**
+ * usbemu_configuration_get_n_interface_groups:
+ * @configuration: (in): the #UsbemuConfiguration object.
+ *
+ * Get number of interface alternate setting groups available.
+ *
+ * Returns: number of interface alternate setting groups.
+ */
+guint
+usbemu_configuration_get_n_interface_groups (UsbemuConfiguration *configuration)
+{
+  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), 0);
+
+  return configuration->interface_groups->len;
+}
+
+/**
+ * usbemu_configuration_add_alternate_interface:
+ * @configuration: (in): the #UsbemuConfiguration object.
+ * @interface_number: an interface number.
+ * @interface: (in): the #UsbemuInterface object.
+ *
+ * Add an interface as the last alternate setting of an interface group
+ * specified by @interface_number. If @interface_number equals to next valid
+ * interface number, a new group is created; or, if larger than that, it's
+ * considered an error.
+ *
+ * Returns: %TRUE if added, %FALSE otherwise.
+ */
+gboolean
+usbemu_configuration_add_alternate_interface (UsbemuConfiguration *configuration,
+                                              guint                interface_number,
+                                              UsbemuInterface     *interface)
+{
+  GArray *interfaces;
+
+  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), FALSE);
+  g_return_val_if_fail (USBEMU_IS_INTERFACE (interface), FALSE);
+
+  if (interface_number > configuration->interface_groups->len)
+    return FALSE;
+
+  if (interface_number == configuration->interface_groups->len) {
+    interfaces = _create_interfaces_array ();
+    g_array_append_val (configuration->interface_groups, interfaces);
+  } else {
+    interfaces = g_array_index (configuration->interface_groups,
+                                GArray*, interface_number);
   }
 
-  interface_number = g_slist_length (configuration->interfaces);
-  slist = NULL;
-  for (interface = interfaces; *interface != NULL; ++interface) {
-    slist = g_slist_append (slist, g_object_ref (*interface));
-  }
-  configuration->interfaces = g_slist_append (configuration->interfaces, slist);
+  g_object_ref (interface);
+  g_array_append_val (interfaces, interface);
 
-  alternate_setting = 0;
-  for (interface = interfaces; *interface != NULL;
-       ++interface, ++alternate_setting) {
-    _usbemu_interface_set_configuration (*interface, configuration,
-                                         interface_number, alternate_setting);
-  }
+  _usbemu_interface_set_configuration (interface, configuration,
+                                       interface_number, interfaces->len - 1);
 
-  return interface_number;
+  return TRUE;
+}
+
+/**
+ * usbemu_configuration_get_alternate_interface:
+ * @configuration: (in): the #UsbemuConfiguration object.
+ * @interface_number: an interface number.
+ * @alternate_setting: a alternate setting value.
+ *
+ * Get the #UsbemuInterface object of specified interface number and alternate
+ * setting value.
+ *
+ * Returns: (transfer full): a #UsbemuInterface object or %NULL if error.
+ */
+UsbemuInterface*
+usbemu_configuration_get_alternate_interface (UsbemuConfiguration *configuration,
+                                              guint                interface_number,
+                                              guint                alternate_setting)
+{
+  GArray *interfaces;
+
+  interfaces = _get_alternate_interfaces (configuration, interface_number);
+  if (interfaces == NULL)
+    return NULL;
+
+  if (alternate_setting >= interfaces->len)
+    return NULL;
+
+  return g_object_ref (
+        g_array_index (interfaces, UsbemuInterface*, alternate_setting));
 }
 
 /**
  * usbemu_configuration_get_alternate_interfaces:
  * @configuration: (in): the #UsbemuConfiguration object.
- * @interface_number: a interface number.
+ * @interface_number: an interface number.
  *
- * Get all interfaces with specified interface number in this configuration.
+ * Get all interfaces with specified interface number in this configuration. Use
+ * g_array_unref() to free the returned array.
  *
- * Returns: (transfer full) (type GSList(UsbemuInterface)):
+ * Returns: (transfer full) (type GArray(UsbemuInterface)):
  *          #UsbemuInterface objects or %NULL if not found.
  */
-GSList*
+GArray*
 usbemu_configuration_get_alternate_interfaces (UsbemuConfiguration *configuration,
                                                guint                interface_number)
 {
-  GSList *slist;
+  GArray *interfaces;
+  GArray *ret;
+  gsize i;
+  UsbemuInterface *interface;
 
-  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), NULL);
+  interfaces = _get_alternate_interfaces (configuration, interface_number);
+  if (interfaces == NULL)
+    return NULL;
 
-  slist = g_slist_nth_data (configuration->interfaces, interface_number);
-  if (slist != NULL)
-    slist = g_slist_copy_deep (slist, (GCopyFunc) g_object_ref, NULL);
+  ret = _create_interfaces_array ();
+  for (i = 0; i < interfaces->len; i++) {
+    interface = g_object_ref (g_array_index (interfaces, UsbemuInterface*, i));
+    g_array_append_val (ret, interface);
+  }
 
-  return slist;
+  return ret;
 }
 
 /**
  * usbemu_configuration_get_n_alternate_interfaces:
  * @configuration: (in): the #UsbemuConfiguration object.
+ * @interface_number: an interface number.
  *
- * Get the number of available interfaces set.
+ * Get the number of available alternate interfaces of a given interface number.
  *
- * Returns: number of available interfaces set.
+ * Returns: number of available interfaces.
  */
 guint
-usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration *configuration)
+usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration *configuration,
+                                                 guint                interface_number)
 {
+  GArray *interfaces;
+
   g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), 0);
 
-  return g_slist_length (configuration->interfaces);
+  if (interface_number >= configuration->interface_groups->len)
+    return 0;
+
+  interfaces = g_array_index (configuration->interface_groups,
+                              GArray*, interface_number);
+  return interfaces->len;
 }
 
 void

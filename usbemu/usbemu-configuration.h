@@ -109,12 +109,18 @@ guint        usbemu_configuration_get_max_power           (UsbemuConfiguration *
 void         usbemu_configuration_set_max_power           (UsbemuConfiguration *configuration,
                                                            guint                max_power);
 
-UsbemuDevice* usbemu_configuration_get_device (UsbemuConfiguration *configuration);
+UsbemuDevice*            usbemu_configuration_get_device (UsbemuConfiguration *configuration);
 
-gint    usbemu_configuration_add_alternate_interfaces   (UsbemuConfiguration      *configuration,
-                                                         struct _UsbemuInterface **interfaces);
-GSList* usbemu_configuration_get_alternate_interfaces   (UsbemuConfiguration      *configuration,
-                                                         guint                     interface_number);
-guint   usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration      *configuration);
+guint                    usbemu_configuration_get_n_interface_groups     (UsbemuConfiguration     *configuration);
+gboolean                 usbemu_configuration_add_alternate_interface    (UsbemuConfiguration     *configuration,
+                                                                          guint                    interface_number,
+                                                                          struct _UsbemuInterface *interface);
+struct _UsbemuInterface* usbemu_configuration_get_alternate_interface    (UsbemuConfiguration     *configuration,
+                                                                          guint                    interface_number,
+                                                                          guint                    alternate_setting);
+GArray*                  usbemu_configuration_get_alternate_interfaces   (UsbemuConfiguration     *configuration,
+                                                                          guint                    interface_number);
+guint                    usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration     *configuration,
+                                                                          guint                    interface_number);
 
 G_END_DECLS

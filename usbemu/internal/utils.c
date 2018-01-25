@@ -206,6 +206,12 @@ _usbemu_object_unref_dereferenced (GObject **object)
   g_object_unref (*object);
 }
 
+void
+_usbemu_garray_unref_dereferenced (GArray **array)
+{
+  g_array_unref (*array);
+}
+
 GObject*
 _usbemu_object_new_from_argv (gchar       ***argv,
                               GType         *base_type,
