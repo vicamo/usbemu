@@ -102,7 +102,7 @@ _ensure_types ()
  * @argv: (inout) (array zero-terminated=1):
  * @base_type: (inout):
  * @type_key: (in) (optional):
- * @keys: (out caller-allocates) (type GArray(gchar)):
+ * @keys: (out caller-allocates) (type GPtrArray(gchar*)):
  * @values: (out caller-allocates) (type GArray(GValue)):
  * @error: (out callee-allocates) (optional):
  */
@@ -110,7 +110,7 @@ static gboolean
 _extract_properties_from_argv (gchar       ***argv,
                                GType         *base_type,
                                const gchar   *type_key,
-                               GArray        *keys,
+                               GPtrArray     *keys,
                                GArray        *values,
                                GError       **error)
 {
@@ -170,9 +170,7 @@ _extract_properties_from_argv (gchar       ***argv,
       break;
     }
 
-    /* g_array_append_val() takes only variables. */
-    k = g_strdup (k);
-    g_array_append_val (keys, k);
+    g_ptr_array_add (keys, g_strdup (k));
 
     g_array_set_size (values, values->len + 1);
     pvalue = &g_array_index (values, GValue, values->len - 1);
@@ -194,31 +192,13 @@ _extract_properties_from_argv (gchar       ***argv,
   return ret;
 }
 
-void
-_usbemu_free_dereferenced (gchar **data)
-{
-  g_free (*data);
-}
-
-void
-_usbemu_object_unref_dereferenced (GObject **object)
-{
-  g_object_unref (*object);
-}
-
-void
-_usbemu_garray_unref_dereferenced (GArray **array)
-{
-  g_array_unref (*array);
-}
-
 GObject*
 _usbemu_object_new_from_argv (gchar       ***argv,
                               GType         *base_type,
                               const gchar   *type_key,
                               GError       **error)
 {
-  GArray *keys;
+  GPtrArray *keys;
   GArray *values;
   GObject *object = NULL;
 
@@ -235,15 +215,14 @@ _usbemu_object_new_from_argv (gchar       ***argv,
     return object;
   }
 
-  keys = g_array_new (FALSE, TRUE, sizeof (gchar*));
+  keys = g_ptr_array_new_with_free_func ((GDestroyNotify) g_free);
   values = g_array_new (FALSE, TRUE, sizeof (GValue));
-  g_array_set_clear_func (keys, (GDestroyNotify) _usbemu_free_dereferenced);
   g_array_set_clear_func (values, (GDestroyNotify) g_value_unset);
 
   if (_extract_properties_from_argv (argv, base_type, type_key,
                                      keys, values, error)) {
     object = g_object_new_with_properties (*base_type, keys->len,
-                                           (const gchar**) keys->data,
+                                           (const gchar**) keys->pdata,
                                            (GValue*) values->data);
     if (object == NULL) {
       g_set_error (error, USBEMU_ERROR, USBEMU_ERROR_INVALID_TYPE,
@@ -252,7 +231,7 @@ _usbemu_object_new_from_argv (gchar       ***argv,
     }
   }
 
-  g_array_free (keys, TRUE);
+  g_ptr_array_unref (keys);
   g_array_free (values, TRUE);
 
   return object;

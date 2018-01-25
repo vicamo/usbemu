@@ -118,7 +118,7 @@ gboolean                 usbemu_configuration_add_alternate_interface    (Usbemu
 struct _UsbemuInterface* usbemu_configuration_get_alternate_interface    (UsbemuConfiguration     *configuration,
                                                                           guint                    interface_number,
                                                                           guint                    alternate_setting);
-GArray*                  usbemu_configuration_get_alternate_interfaces   (UsbemuConfiguration     *configuration,
+GPtrArray*               usbemu_configuration_get_alternate_interfaces   (UsbemuConfiguration     *configuration,
                                                                           guint                    interface_number);
 guint                    usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration     *configuration,
                                                                           guint                    interface_number);

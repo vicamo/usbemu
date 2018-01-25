@@ -74,7 +74,7 @@ typedef struct  _UsbemuDevicePrivate {
   gchar *product;
   gchar *serial;
   UsbemuSpeeds speed;
-  GArray *configurations;
+  GPtrArray *configurations;
 } UsbemuDevicePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE (UsbemuDevice, usbemu_device, G_TYPE_OBJECT)
@@ -152,7 +152,7 @@ gobject_class_dispose (GObject *object)
   UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
 
   if (priv->configurations != NULL) {
-    g_array_unref (priv->configurations);
+    g_ptr_array_unref (priv->configurations);
     priv->configurations = NULL;
   }
 }
@@ -227,16 +227,10 @@ usbemu_device_class_init (UsbemuDeviceClass *device_class)
   g_object_class_install_properties (object_class, N_PROPERTIES, props);
 }
 
-static GArray*
+static GPtrArray*
 _create_configurations_array ()
 {
-  GArray *configurations;
-
-  configurations = g_array_new (FALSE, TRUE, sizeof (UsbemuConfiguration*));
-  g_array_set_clear_func (configurations,
-                          (GDestroyNotify) _usbemu_object_unref_dereferenced);
-
-  return configurations;
+  return g_ptr_array_new_with_free_func ((GDestroyNotify) g_object_unref);
 }
 
 static void
@@ -973,8 +967,7 @@ usbemu_device_add_configuration (UsbemuDevice        *device,
   if (usbemu_configuration_get_configuration_value (configuration) != 0)
     return FALSE;
 
-  g_object_ref (configuration);
-  g_array_append_val (priv->configurations, configuration);
+  g_ptr_array_add (priv->configurations, g_object_ref (configuration));
   bConfigurationValue = priv->configurations->len;
   _usbemu_configuration_set_device (configuration, device, bConfigurationValue);
 
@@ -1006,9 +999,8 @@ usbemu_device_get_configuration (UsbemuDevice *device,
   if (configuration_value > priv->configurations->len)
     return NULL;
 
-  configuration = g_array_index (priv->configurations,
-                                 UsbemuConfiguration*, configuration_value - 1);
-  return g_object_ref (configuration);
+  return g_object_ref (g_ptr_array_index (priv->configurations,
+                                          configuration_value - 1));
 }
 
 /**
@@ -1017,15 +1009,15 @@ usbemu_device_get_configuration (UsbemuDevice *device,
  *
  * Get all available configurations of a device.
  *
- * Returns: (transfer full) (type GArray(UsbemuConfiguration*)): A list of
+ * Returns: (transfer full) (type GPtrArray(UsbemuConfiguration*)): A list of
  *          #UsbemuConfiguration objects added to the device. Free with
  *          g_array_unref().
  */
-GArray*
+GPtrArray*
 usbemu_device_get_configurations (UsbemuDevice *device)
 {
   UsbemuDevicePrivate *priv;
-  GArray *ret;
+  GPtrArray *ret;
   UsbemuConfiguration *configuration;
   gsize i;
 
@@ -1034,10 +1026,8 @@ usbemu_device_get_configurations (UsbemuDevice *device)
   priv = USBEMU_DEVICE_GET_PRIVATE (device);
   ret = _create_configurations_array ();
   for (i = 0; i < priv->configurations->len; i++) {
-    configuration =
-          g_array_index (priv->configurations, UsbemuConfiguration*, i);
-    g_object_ref (configuration);
-    g_array_append_val (ret, configuration);
+    configuration = g_ptr_array_index (priv->configurations, i);
+    g_ptr_array_add (ret, g_object_ref (configuration));
   }
 
   return ret;

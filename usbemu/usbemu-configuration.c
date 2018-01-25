@@ -58,7 +58,7 @@ struct _UsbemuConfiguration {
   guint bMaxPower;
 
   UsbemuDevice *device;
-  GArray *interface_groups;
+  GPtrArray *interface_groups;
 };
 
 G_DEFINE_TYPE (UsbemuConfiguration, usbemu_configuration, G_TYPE_OBJECT)
@@ -148,7 +148,7 @@ gobject_class_dispose (GObject *object)
   UsbemuConfiguration *configuration = USBEMU_CONFIGURATION (object);
 
   if (configuration->interface_groups != NULL) {
-    g_array_unref (configuration->interface_groups);
+    g_ptr_array_unref (configuration->interface_groups);
     configuration->interface_groups = NULL;
   }
 
@@ -222,9 +222,8 @@ usbemu_configuration_init (UsbemuConfiguration *configuration)
   configuration->bMaxPower = USBEMU_CONFIGURATION_PROP_MAX_POWER__DEFAULT;
   configuration->device = NULL;
 
-  configuration->interface_groups = g_array_new (FALSE, TRUE, sizeof (GArray*));
-  g_array_set_clear_func (configuration->interface_groups,
-                          (GDestroyNotify) _usbemu_garray_unref_dereferenced);
+  configuration->interface_groups =
+        g_ptr_array_new_with_free_func ((GDestroyNotify) g_ptr_array_unref);
 }
 
 /**
@@ -513,31 +512,24 @@ usbemu_configuration_get_device (UsbemuConfiguration *configuration)
   return NULL;
 }
 
-static GArray*
+static GPtrArray*
 _create_interfaces_array ()
 {
-  GArray *interfaces;
-
-  interfaces = g_array_new (FALSE, TRUE, sizeof (UsbemuInterface*));
-  g_array_set_clear_func (interfaces,
-                          (GDestroyNotify) _usbemu_object_unref_dereferenced);
-
-  return interfaces;
+  return g_ptr_array_new_with_free_func ((GDestroyNotify) g_object_unref);
 }
 
-static GArray*
+static GPtrArray*
 _get_alternate_interfaces (UsbemuConfiguration *configuration,
                            guint                interface_number)
 {
-  GArray *interfaces;
+  GPtrArray *interfaces;
 
   g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), NULL);
 
   if (interface_number >= configuration->interface_groups->len)
     return NULL;
 
-  return g_array_index (configuration->interface_groups,
-                        GArray*, interface_number);
+  return g_ptr_array_index (configuration->interface_groups, interface_number);
 }
 
 /**
@@ -574,7 +566,7 @@ usbemu_configuration_add_alternate_interface (UsbemuConfiguration *configuration
                                               guint                interface_number,
                                               UsbemuInterface     *interface)
 {
-  GArray *interfaces;
+  GPtrArray *interfaces;
 
   g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), FALSE);
   g_return_val_if_fail (USBEMU_IS_INTERFACE (interface), FALSE);
@@ -584,15 +576,13 @@ usbemu_configuration_add_alternate_interface (UsbemuConfiguration *configuration
 
   if (interface_number == configuration->interface_groups->len) {
     interfaces = _create_interfaces_array ();
-    g_array_append_val (configuration->interface_groups, interfaces);
+    g_ptr_array_add (configuration->interface_groups, interfaces);
   } else {
-    interfaces = g_array_index (configuration->interface_groups,
-                                GArray*, interface_number);
+    interfaces = g_ptr_array_index (configuration->interface_groups,
+                                    interface_number);
   }
 
-  g_object_ref (interface);
-  g_array_append_val (interfaces, interface);
-
+  g_ptr_array_add (interfaces, g_object_ref (interface));
   _usbemu_interface_set_configuration (interface, configuration,
                                        interface_number, interfaces->len - 1);
 
@@ -615,7 +605,7 @@ usbemu_configuration_get_alternate_interface (UsbemuConfiguration *configuration
                                               guint                interface_number,
                                               guint                alternate_setting)
 {
-  GArray *interfaces;
+  GPtrArray *interfaces;
 
   interfaces = _get_alternate_interfaces (configuration, interface_number);
   if (interfaces == NULL)
@@ -624,8 +614,7 @@ usbemu_configuration_get_alternate_interface (UsbemuConfiguration *configuration
   if (alternate_setting >= interfaces->len)
     return NULL;
 
-  return g_object_ref (
-        g_array_index (interfaces, UsbemuInterface*, alternate_setting));
+  return g_object_ref (g_ptr_array_index (interfaces, alternate_setting));
 }
 
 /**
@@ -636,15 +625,15 @@ usbemu_configuration_get_alternate_interface (UsbemuConfiguration *configuration
  * Get all interfaces with specified interface number in this configuration. Use
  * g_array_unref() to free the returned array.
  *
- * Returns: (transfer full) (type GArray(UsbemuInterface)):
+ * Returns: (transfer full) (type GPtrArray(UsbemuInterface*)):
  *          #UsbemuInterface objects or %NULL if not found.
  */
-GArray*
+GPtrArray*
 usbemu_configuration_get_alternate_interfaces (UsbemuConfiguration *configuration,
                                                guint                interface_number)
 {
-  GArray *interfaces;
-  GArray *ret;
+  GPtrArray *interfaces;
+  GPtrArray *ret;
   gsize i;
   UsbemuInterface *interface;
 
@@ -653,10 +642,8 @@ usbemu_configuration_get_alternate_interfaces (UsbemuConfiguration *configuratio
     return NULL;
 
   ret = _create_interfaces_array ();
-  for (i = 0; i < interfaces->len; i++) {
-    interface = g_object_ref (g_array_index (interfaces, UsbemuInterface*, i));
-    g_array_append_val (ret, interface);
-  }
+  for (i = 0; i < interfaces->len; i++)
+    g_ptr_array_add (ret, g_object_ref (g_ptr_array_index (interfaces, i)));
 
   return ret;
 }
@@ -674,16 +661,10 @@ guint
 usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration *configuration,
                                                  guint                interface_number)
 {
-  GArray *interfaces;
+  GPtrArray *interfaces;
 
-  g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), 0);
-
-  if (interface_number >= configuration->interface_groups->len)
-    return 0;
-
-  interfaces = g_array_index (configuration->interface_groups,
-                              GArray*, interface_number);
-  return interfaces->len;
+  interfaces = _get_alternate_interfaces (configuration, interface_number);
+  return (interfaces != NULL) ? interfaces->len : 0;
 }
 
 void

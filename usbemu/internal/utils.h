@@ -52,9 +52,6 @@ void _usbemu_interface_set_configuration (UsbemuInterface     *interface,
                                           guint                interface_number,
                                           guint                alternate_setting);
 
-void _usbemu_free_dereferenced (gchar **data);
-void _usbemu_object_unref_dereferenced (GObject **object);
-void _usbemu_garray_unref_dereferenced (GArray **array);
 GObject* _usbemu_object_new_from_argv (gchar       ***argv,
                                        GType         *base_type,
                                        const gchar   *type_key,

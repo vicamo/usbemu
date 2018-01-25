@@ -285,7 +285,7 @@ gboolean                     usbemu_device_add_configuration    (UsbemuDevice   
                                                                  struct _UsbemuConfiguration *configuration);
 struct _UsbemuConfiguration* usbemu_device_get_configuration    (UsbemuDevice                *device,
                                                                  guint                        configuration_value);
-GArray*                      usbemu_device_get_configurations   (UsbemuDevice                *device);
+GPtrArray*                   usbemu_device_get_configurations   (UsbemuDevice                *device);
 guint                        usbemu_device_get_n_configurations (UsbemuDevice                *device);
 
 G_END_DECLS
