@@ -229,7 +229,7 @@ UsbemuDevice* usbemu_device_new_from_string (const gchar  *str,
                                              GError      **error);
 
 gboolean usbemu_device_get_attached  (UsbemuDevice         *device);
-void     usbemu_device_attach        (UsbemuDevice         *device,
+void     usbemu_device_attach_async  (UsbemuDevice         *device,
                                       gchar               **options,
                                       GCancellable         *cancellable,
                                       GAsyncReadyCallback   callback,
@@ -237,7 +237,7 @@ void     usbemu_device_attach        (UsbemuDevice         *device,
 gboolean usbemu_device_attach_finish (UsbemuDevice         *device,
                                       GAsyncResult         *result,
                                       GError              **error);
-void     usbemu_device_detach        (UsbemuDevice         *device,
+void     usbemu_device_detach_async  (UsbemuDevice         *device,
                                       gchar               **options,
                                       GCancellable         *cancellable,
                                       GAsyncReadyCallback   callback,

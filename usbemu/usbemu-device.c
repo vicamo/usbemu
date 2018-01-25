@@ -392,7 +392,7 @@ usbemu_device_get_attached (UsbemuDevice *device)
 }
 
 /**
- * usbemu_device_attach:
+ * usbemu_device_attach_async:
  * @device: (in): a #UsbemuDevice object.
  * @options: (in) (optional) (array zero-terminated=1): extra information passed
  *           for command line as string-array.
@@ -404,11 +404,11 @@ usbemu_device_get_attached (UsbemuDevice *device)
  * usbemu_device_attach_finish() to retrieve the result.
  */
 void
-usbemu_device_attach (UsbemuDevice         *device,
-                      gchar               **options,
-                      GCancellable         *cancellable,
-                      GAsyncReadyCallback   callback,
-                      gpointer              user_data)
+usbemu_device_attach_async (UsbemuDevice         *device,
+                            gchar               **options,
+                            GCancellable         *cancellable,
+                            GAsyncReadyCallback   callback,
+                            gpointer              user_data)
 {
   GTask *task;
   UsbemuDeviceClass *klass;
@@ -430,9 +430,9 @@ usbemu_device_attach (UsbemuDevice         *device,
  * usbemu_device_attach_finish:
  * @device: (in): a #UsbemuDevice object.
  * @result: (in): the #GAsyncResult.
- * @error: (out): #GError for error reporting, or %NULL to ignore.
+ * @error: (out) (optional): #GError for error reporting, or %NULL to ignore.
  *
- * Gets the result of a usbemu_device_attach() call.
+ * Gets the result of a usbemu_device_attach_async() call.
  *
  * Returns: %TRUE if the attachment has been done successfully, %FALSE on error.
  */
@@ -447,7 +447,7 @@ usbemu_device_attach_finish (UsbemuDevice         *device,
 }
 
 /**
- * usbemu_device_detach:
+ * usbemu_device_detach_async:
  * @device: (in): a #UsbemuDevice object.
  * @options: (in) (optional) (array zero-terminated=1): extra information passed
  *           for command line as string-array.
@@ -459,11 +459,11 @@ usbemu_device_attach_finish (UsbemuDevice         *device,
  * usbemu_device_detach_finish() to retrieve the result.
  */
 void
-usbemu_device_detach (UsbemuDevice         *device,
-                      gchar               **options,
-                      GCancellable         *cancellable,
-                      GAsyncReadyCallback   callback,
-                      gpointer              user_data)
+usbemu_device_detach_async (UsbemuDevice         *device,
+                            gchar               **options,
+                            GCancellable         *cancellable,
+                            GAsyncReadyCallback   callback,
+                            gpointer              user_data)
 {
   GTask *task;
   UsbemuDeviceClass *klass;
@@ -487,7 +487,7 @@ usbemu_device_detach (UsbemuDevice         *device,
  * @result: (in): the #GAsyncResult.
  * @error: (out): #GError for error reporting, or %NULL to ignore.
  *
- * Gets the result of a usbemu_device_detach() call.
+ * Gets the result of a usbemu_device_detach_async() call.
  *
  * Returns: %TRUE if the detachment has been done successfully, %FALSE on error.
  */

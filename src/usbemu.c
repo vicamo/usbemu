@@ -211,11 +211,13 @@ main (int   argc,
 
   main_loop = g_main_loop_new (NULL, FALSE);
   if (opt_action == ACTION_ATTACH) {
-    usbemu_device_attach (device, opt_action_options, NULL,
-                          (GAsyncReadyCallback) device_attach_callback, NULL);
+    usbemu_device_attach_async (device, opt_action_options, NULL,
+                                (GAsyncReadyCallback) device_attach_callback,
+                                NULL);
   } else {
-    usbemu_device_detach (device, opt_action_options, NULL,
-                          (GAsyncReadyCallback) device_detach_callback, NULL);
+    usbemu_device_detach_async (device, opt_action_options, NULL,
+                                (GAsyncReadyCallback) device_detach_callback,
+                                NULL);
   }
 
   g_main_loop_run (main_loop);
