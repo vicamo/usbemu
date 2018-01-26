@@ -54,8 +54,8 @@ static gchar **opt_action_options = NULL;
 static gboolean
 parse_arg_attach (const gchar  *option_name,
                   const gchar  *value,
-                  gpointer      data,
-                   GError     **error)
+                  gpointer      data G_GNUC_UNUSED,
+                  GError      **error)
 {
   if (opt_action != ACTION_NONE) {
     g_set_error (error, G_OPTION_ERROR, G_OPTION_ERROR_FAILED,

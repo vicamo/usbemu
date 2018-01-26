@@ -113,12 +113,9 @@ static void usbemu_device_class_init (UsbemuDeviceClass *device_class);
 static void
 gobject_class_set_property (GObject      *object,
                             guint         prop_id,
-                            const GValue *value,
+                            const GValue *value G_GNUC_UNUSED,
                             GParamSpec   *pspec)
 {
-  UsbemuDevice *device = USBEMU_DEVICE (object);
-  UsbemuDevicePrivate *priv = USBEMU_DEVICE_GET_PRIVATE (device);
-
   switch (prop_id) {
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -990,7 +987,6 @@ usbemu_device_get_configuration (UsbemuDevice *device,
                                  guint         configuration_value)
 {
   UsbemuDevicePrivate *priv;
-  UsbemuConfiguration *configuration;
 
   g_return_val_if_fail (USBEMU_IS_DEVICE (device), NULL);
   g_return_val_if_fail (configuration_value > 0, NULL);

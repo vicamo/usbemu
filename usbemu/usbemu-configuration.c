@@ -89,8 +89,6 @@ static void gobject_class_dispose (GObject *object);
 static void gobject_class_finalize (GObject *object);
 /* virtual methods for UsbemuConfigurationClass */
 static void usbemu_configuration_class_init (UsbemuConfigurationClass *configuration_class);
-/* helper functions */
-static void _free_interfaces_slist_inner (GSList *slist);
 
 static void
 gobject_class_set_property (GObject      *object,
@@ -522,8 +520,6 @@ static GPtrArray*
 _get_alternate_interfaces (UsbemuConfiguration *configuration,
                            guint                interface_number)
 {
-  GPtrArray *interfaces;
-
   g_return_val_if_fail (USBEMU_IS_CONFIGURATION (configuration), NULL);
 
   if (interface_number >= configuration->interface_groups->len)
@@ -635,7 +631,6 @@ usbemu_configuration_get_alternate_interfaces (UsbemuConfiguration *configuratio
   GPtrArray *interfaces;
   GPtrArray *ret;
   gsize i;
-  UsbemuInterface *interface;
 
   interfaces = _get_alternate_interfaces (configuration, interface_number);
   if (interfaces == NULL)

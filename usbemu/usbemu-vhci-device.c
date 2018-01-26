@@ -264,7 +264,7 @@ device_class_attach_async (UsbemuDevice  *device,
 static void
 device_class_detach_async (UsbemuDevice  *device,
                            GTask         *task,
-                           gchar        **options)
+                           gchar        **options G_GNUC_UNUSED)
 {
   guint port;
   GError *error = NULL;
