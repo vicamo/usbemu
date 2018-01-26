@@ -115,7 +115,7 @@ usbemu_libusbemu_la_SOURCES += \
   usbemu/usbemu-vhci-device.h
 usbemu_libusbemu_la_CFLAGS += \
   $(GUDEV_CFLAGS)
-usbemu_libusbemu_la_LIBADD = \
+usbemu_libusbemu_la_LIBADD += \
   $(GUDEV_LIBS)
 
 usbemu_include_HEADERS += \
