@@ -443,6 +443,7 @@ _on_istream_fill_callback (GBufferedInputStream *bistream,
     if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
       _cleanup_attached_state_from_error (vhci_device);
 
+    g_error_free (error);
     return;
   }
 
