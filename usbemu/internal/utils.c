@@ -246,7 +246,7 @@ _usbemu_utils_write_sysfs_path (const gchar  *path,
   gint fd;
   gssize written;
 
-  g_debug (LOG_COMPONENT "writing '%s' with: %s", path, data);
+  g_debug (LOG_COMPONENT "writing '%s' with %zu bytes", path, count);
 
   fd = open (path, O_WRONLY);
   if (fd < 0) {

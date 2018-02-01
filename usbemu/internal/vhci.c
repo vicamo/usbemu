@@ -141,7 +141,7 @@ parse_status (GArray      *statuses,
   ++line; /* skip header */
   for (; *line != NULL; ++line) {
     ret = sscanf (*line, "%2s  %u %u %u %x %16lx %31s",
-                  &hub, &port, &status, &speed, &devid, &socket, &busid);
+                  hub, &port, &status, &speed, &devid, &socket, busid);
     if (ret < 7)
       continue;
 
