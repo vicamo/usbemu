@@ -60,7 +60,8 @@ usbemu_libusbemu_la_SOURCES = \
   usbemu/usbemu-errors.c \
   usbemu/usbemu-errors.h \
   usbemu/usbemu-interface.c \
-  usbemu/usbemu-interface.h
+  usbemu/usbemu-interface.h \
+  usbemu/usbemu-usb.h
 usbemu_libusbemu_la_CPPFLAGS = \
   $(AM_CPPFLAGS) \
   -DLIBUSBEMU_COMPILATION
@@ -77,7 +78,8 @@ usbemu_include_HEADERS += \
   usbemu/usbemu-configuration.h \
   usbemu/usbemu-device.h \
   usbemu/usbemu-errors.h \
-  usbemu/usbemu-interface.h
+  usbemu/usbemu-interface.h \
+  usbemu/usbemu-usb.h
 
 ###############################
 ## libusbemu - enums
@@ -87,10 +89,8 @@ libusbemu_enum_built_sources = \
   usbemu/usbemu-enums.h
 
 libusbemu_enum_check_headers = \
-  usbemu/usbemu-configuration.h \
-  usbemu/usbemu-device.h \
   usbemu/usbemu-errors.h \
-  usbemu/usbemu-interface.h
+  usbemu/usbemu-usb.h
 
 $(libusbemu_enum_built_sources): Makefile.am $(libusbemu_enum_check_headers) \
   $(libusbemu_enum_built_sources:=.template)

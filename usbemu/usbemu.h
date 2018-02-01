@@ -24,6 +24,7 @@
 #include <usbemu/usbemu-enums.h>
 #include <usbemu/usbemu-errors.h>
 #include <usbemu/usbemu-interface.h>
+#include <usbemu/usbemu-usb.h>
 
 #include <usbemu/usbemu-vhci-device.h>
 

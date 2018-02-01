@@ -23,7 +23,8 @@
 
 #include <glib-object.h>
 
-#include <usbemu/usbemu-device.h>
+#include <usbemu/usbemu-interface.h>
+#include <usbemu/usbemu-usb.h>
 
 G_BEGIN_DECLS
 
@@ -56,37 +57,9 @@ G_DECLARE_FINAL_TYPE (UsbemuConfiguration, usbemu_configuration,
  */
 #define USBEMU_CONFIGURATION_PROP_MAX_POWER "max-power"
 
-struct _UsbemuInterface;
-
-/**
- * UsbemuConfigurationAttributes:
- * @USBEMU_CONFIGURATION_ATTR_RESERVED_0: Reserved.
- * @USBEMU_CONFIGURATION_ATTR_RESERVED_1: Reserved.
- * @USBEMU_CONFIGURATION_ATTR_RESERVED_2: Reserved.
- * @USBEMU_CONFIGURATION_ATTR_RESERVED_3: Reserved.
- * @USBEMU_CONFIGURATION_ATTR_RESERVED_4: Reserved.
- * @USBEMU_CONFIGURATION_ATTR_REMOTE_WAKEUP: Set if a device configuration
- *     supports remote wakeup.
- * @USBEMU_CONFIGURATION_ATTR_SELF_POWER: A device configuration that uses power
- *     from the bus and a local source reports a non-zero value in
- *     #UsbemuConfiguration:max-power to indicate the amount of bus power
- *     required.
- * @USBEMU_CONFIGURATION_ATTR_RESERVED_7: Reserved and must be set to for
- *     historical reasons.
- *
- * Configuration characteristics.
- */
-typedef enum /*< flags,prefix=USBEMU >*/
-{
-  USBEMU_CONFIGURATION_ATTR_RESERVED_0 = (0x1 << 0), /*< nick=RESERVED_0 >*/
-  USBEMU_CONFIGURATION_ATTR_RESERVED_1 = (0x1 << 1), /*< nick=RESERVED_1 >*/
-  USBEMU_CONFIGURATION_ATTR_RESERVED_2 = (0x1 << 2), /*< nick=RESERVED_2 >*/
-  USBEMU_CONFIGURATION_ATTR_RESERVED_3 = (0x1 << 3), /*< nick=RESERVED_3 >*/
-  USBEMU_CONFIGURATION_ATTR_RESERVED_4 = (0x1 << 4), /*< nick=RESERVED_4 >*/
-  USBEMU_CONFIGURATION_ATTR_REMOTE_WAKEUP = (0x1 << 5), /*< nick=REMOTE_WAKEUP >*/
-  USBEMU_CONFIGURATION_ATTR_SELF_POWER = (0x1 << 6), /*< nick=SELF_POWER >*/
-  USBEMU_CONFIGURATION_ATTR_RESERVED_7 = (0x1 << 7), /*< nick=RESERVED_7 >*/
-} UsbemuConfigurationAttributes;
+#ifndef __GTK_DOC_IGNORE__
+typedef struct _UsbemuDevice UsbemuDevice;
+#endif
 
 UsbemuConfiguration* usbemu_configuration_new             ();
 UsbemuConfiguration* usbemu_configuration_new_full        (const gchar *name,
@@ -109,18 +82,18 @@ guint        usbemu_configuration_get_max_power           (UsbemuConfiguration *
 void         usbemu_configuration_set_max_power           (UsbemuConfiguration *configuration,
                                                            guint                max_power);
 
-UsbemuDevice*            usbemu_configuration_get_device (UsbemuConfiguration *configuration);
+UsbemuDevice*    usbemu_configuration_get_device (UsbemuConfiguration *configuration);
 
-guint                    usbemu_configuration_get_n_interface_groups     (UsbemuConfiguration     *configuration);
-gboolean                 usbemu_configuration_add_alternate_interface    (UsbemuConfiguration     *configuration,
-                                                                          guint                    interface_number,
-                                                                          struct _UsbemuInterface *interface);
-struct _UsbemuInterface* usbemu_configuration_get_alternate_interface    (UsbemuConfiguration     *configuration,
-                                                                          guint                    interface_number,
-                                                                          guint                    alternate_setting);
-GPtrArray*               usbemu_configuration_get_alternate_interfaces   (UsbemuConfiguration     *configuration,
-                                                                          guint                    interface_number);
-guint                    usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration     *configuration,
-                                                                          guint                    interface_number);
+guint            usbemu_configuration_get_n_interface_groups     (UsbemuConfiguration *configuration);
+gboolean         usbemu_configuration_add_alternate_interface    (UsbemuConfiguration *configuration,
+                                                                  guint                interface_number,
+                                                                  UsbemuInterface     *interface);
+UsbemuInterface* usbemu_configuration_get_alternate_interface    (UsbemuConfiguration *configuration,
+                                                                  guint                interface_number,
+                                                                  guint                alternate_setting);
+GPtrArray*       usbemu_configuration_get_alternate_interfaces   (UsbemuConfiguration *configuration,
+                                                                  guint                interface_number);
+guint            usbemu_configuration_get_n_alternate_interfaces (UsbemuConfiguration *configuration,
+                                                                  guint                interface_number);
 
 G_END_DECLS
